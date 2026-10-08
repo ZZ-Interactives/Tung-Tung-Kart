@@ -2399,10 +2399,10 @@ const MAPS=[
   {id:'midnight',name:'Sahur Midnight',host:0,sky:'night',pts:[[0,0,0],[140,0,0],[230,0,-20],[280,0,-90],[262,0,-180],[182,0,-222],[100,3,-194],[20,5,-202],[-60,3,-240],[-150,0,-222],[-202,0,-150],[-170,0,-80],[-212,0,-20],[-150,0,30],[-70,0,22]],
     gap:null,lake:{x:40,z:-210,rx:85,rz:36},sea:null,hills:26,mtn:.55,grass:[0x2f5a2c,0x4a7a3a],sand:0x9a8a66,water:0x173a55,road:'#43464e',kerb:[0xd8261c,0xf2f2f2],walls:'tyre',scen:'village',music:'night',
     brands:[['SAHUR SNACKS','#ff7a1a','#fff'],['KENTONGAN FM','#14123a','#ffd23f'],['WARUNG 24/7','#21c07a','#fff']]},
-  {id:'brie',name:'Tralalero Beach',host:1,sky:'day',pts:[[0,0,0],[120,0,14],[235,0,-2],[315,0,-58],[385,-1.9,-112],[438,-1.9,-175],[425,-1.9,-245],[392,0,-298],[432,2,-372],[445,7,-460],[400,12,-530],[328,14,-555],[265,11,-520],[232,5,-458],[155,0,-438],[80,0,-495],[0,0,-475],[-80,0,-510],[-160,0,-475],[-230,0,-420],[-282,0,-340],[-302,0,-245],[-276,0,-142],[-215,0,-95],[-150,0,-140],[-85,0,-188],[-25,0,-152],[-40,0,-82],[-95,0,-32],[-75,0,14]],
+  {id:'brie',name:'Tralalero Beach',host:1,sky:'day',pts:[[0,0,0],[120,0,14],[235,0,-2],[315,0,-58],[385,0,-112],[438,0,-175],[425,0,-245],[392,0,-298],[432,2,-372],[445,7,-460],[400,12,-530],[328,14,-555],[265,11,-520],[232,5,-458],[155,0,-438],[80,0,-495],[0,0,-475],[-80,0,-510],[-160,0,-475],[-230,0,-420],[-292,-1.9,-338],[-314,-1.9,-245],[-276,0,-142],[-215,0,-95],[-150,0,-140],[-85,0,-188],[-25,0,-152],[-40,0,-82],[-95,0,-32],[-75,0,14]],
     hill:true,coast:[54,72,-15],ridge:11,beaches:[[110,80,175],[350,-60,140],[-150,-90,150],[-300,-260,140],[-60,-500,120]],clear:[[-185,-450,120]],flats:[[338,-498,20,46,17.5]],lighthouse:[338,-498],
-    cave:[20,-488,130],arch:[-284,-170],waterfall:[-188,-446,108],noStand:true,waterOp:.8,
-    gap:null,lake:null,sea:null,hills:10,mtn:.1,grass:[0x8fb84e,0xb7c86a],sand:0xeed49c,water:0x16a2c8,road:'#c8a978',kerb:[0xdc2a1c,0xf4f4f4],walls:'fence',scen:'beach',music:'beach',
+    cave:[20,-488,130],arch:[-284,-170],waterfall:[-188,-446,108],noStand:true,waterOp:.8,skyDome:[0x1f6fd6,0x4fa6ee,0xb4e0fa],skyP:{turb:1.6,ray:2.4,mie:.0018,g:.78,fog:[0x9ccdf2,520,2600],hemi:[0xcfe6ff,0xa89a74,.45],exp:.58},
+    gap:null,lake:null,sea:null,hills:10,mtn:.1,grass:[0x5fae3e,0x86c452],sand:0xeed49c,water:0x16a2c8,road:'#c8a978',kerb:[0xdc2a1c,0xf4f4f4],walls:'fence',scen:'beach',music:'beach',
     brands:[['CHEESE WAVE','#ffd23f','#14123a'],['SUNNY FM','#ff3d5a','#fff'],['SANDY BURGERS','#21c07a','#fff']]},
   {id:'grounds',name:'Cappuccina Café Circuit',host:2,sky:'sunset',pts:[[0,0,0],[150,0,10],[250,0,70],[262,0,170],[192,2,240],[100,7,262],[20,8,252],[-60,6,232],[-140,2,250],[-222,0,200],[-242,0,100],[-170,0,60],[-212,0,-20],[-130,0,-60],[-50,0,-30]],
     gap:{x0:28,x1:58,zmin:225},lake:{x:40,z:250,rx:120,rz:44},sea:null,hills:22,mtn:.7,grass:[0xe9b3a6,0xf6d2c2],sand:0xf3dfc4,water:0x5a3418,road:'#5e3f30',kerb:[0xff7aa8,0xfff4e8],walls:'tyre',scen:'cafe',music:'cafe',
@@ -2518,7 +2518,7 @@ function buildTerrain(){
       else if(M.scen==='dust'){c.lerp(PT.a,k*.5);c.lerp(PT.b,smooth(.6,.8,fbm(x*.012+7,z*.012-3,3))*.45);}
     }
     if(r.sandy)c.lerp(sand,r.sandy*smooth(12,26,r.dG));
-    if(M.coast)c.lerp(sand,(1-smooth(.5,.68,fbm(x*.012+11,z*.012-4,3))*smooth(1.5,6,h))*.85);
+    if(M.coast)c.lerp(sand,(1-smooth(.3,.45,fbm(x*.012+11,z*.012-4,3))*(1-.75*r.sandy)*smooth(WATER_Y+.8,WATER_Y+2.4,h))*.82);
     if(M.coast&&r.dG>36&&h>WATER_Y-.6)c.lerp(rock,(1-r.sandy)*smooth(5,1.2,h)*.8);
     if(h<WATER_Y+.2){if(M.coast)c.copy(shoal).lerp(deep,smooth(WATER_Y,WATER_Y-9,h));else c.copy(wet);}
     if(h>22)c.lerp(rock,smooth(22,60,h)*.85);
@@ -2750,7 +2750,7 @@ function buildScenery(){
       const env=new THREE.Mesh(new THREE.SphereGeometry(7,24,18),new THREE.MeshStandardMaterial({map:st,roughness:.6}));env.scale.y=1.2;g.add(env);const bsk=new THREE.Mesh(new THREE.BoxGeometry(2.2,1.6,2.2),new THREE.MeshStandardMaterial({color:0x7a5230,roughness:.9}));bsk.position.y=-11.5;g.add(bsk);return g;};
     [[0xff3d5a,0xffd23f,-120,95,180],[0x7b4dff,0xffffff,260,120,420],[0x21c07a,0xffd23f,80,140,-260]].forEach(([a,b,x,y,z],i)=>{const g=bal(hex(a),hex(b));g.position.set(x,y,z);world.add(g);anim.balloons.push({g,x,y,z,p:i*2});});};
   if(M.scen==='beach'){
-    trees(M.coast?330:170,M.coast?60:300,M.coast?160:320,[.27,.24,.1,.45,.24]);if(!M.noStand)grandstand();clouds(0xffffff,.9);flags();balloons();
+    trees(M.coast?330:170,M.coast?140:300,M.coast?280:320,[.27,.24,.1,.45,.24]);if(!M.noStand)grandstand();clouds(0xffffff,.9);flags();balloons();
     const LH=M.lighthouse||[70,-128],t=terrainH(LH[0],LH[1]),lh=new THREE.Group();const stripes=tex(mkCanvas(64,256,(g)=>{for(let k=0;k<8;k++){g.fillStyle=k%2?'#fff':'#ff3d5a';g.fillRect(0,k*32,64,32);}}),false);stripes.encoding=THREE.sRGBEncoding;
     const tower=new THREE.Mesh(new THREE.CylinderGeometry(2.2,3.4,26,20),new THREE.MeshStandardMaterial({map:stripes,roughness:.6}));tower.position.y=13;tower.castShadow=true;lh.add(tower);
     const top=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.6,3,16),new THREE.MeshStandardMaterial({color:0xfff3c4,emissive:0xffd36a,emissiveIntensity:.6}));top.position.y=27.5;lh.add(top);
@@ -3442,14 +3442,20 @@ function buildPickups(){
 }
 function applyTheme(M){
   const t=M.sky;
-  if(sky)sky.visible=t==='day'||t==='sunset'||t==='overcast'||t==='dust'||t==='dusk';nightSky.visible=t==='night';scene.background=t==='indoor'?new THREE.Color(0xb8a65a).convertSRGBToLinear():(sky?null:new THREE.Color(0x88b8e8));
-  const P={day:{el:42,az:150,turb:5,ray:1.4,mie:.004,g:.8,fog:[0xbcd6ee,320,1900],sun:[0xfff3e2,2.6],hemi:[0xd6eaff,0x5d7a40,.45],exp:.66},
+  if(sky)sky.visible=(t==='day'||t==='sunset'||t==='overcast'||t==='dust'||t==='dusk')&&!M.skyDome;
+  const mkDome=(rad,cols)=>{const g=new THREE.SphereGeometry(rad,32,16),p=g.attributes.position,c=new Float32Array(p.count*3),A=new THREE.Color(cols[0]).convertSRGBToLinear(),B=new THREE.Color(cols[1]).convertSRGBToLinear(),H=new THREE.Color(cols[2]).convertSRGBToLinear(),tc=new THREE.Color();
+    for(let i=0;i<p.count;i++){const y=p.getY(i)/rad;if(y<.02)tc.copy(H);else if(y<.35)tc.copy(H).lerp(B,smooth(.02,.35,y));else tc.copy(B).lerp(A,smooth(.35,1,y));c[i*3]=tc.r;c[i*3+1]=tc.g;c[i*3+2]=tc.b;}
+    g.setAttribute('color',new THREE.BufferAttribute(c,3));const m=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide,fog:false,depthWrite:false,toneMapped:false});m.userData.lin=true;const d=new THREE.Mesh(g,m);d.renderOrder=-10;d.frustumCulled=false;return d;};
+  if(window.__skyDome){scene.remove(window.__skyDome);window.__skyDome.geometry.dispose();window.__skyDome=null;}
+  if(M.skyDome){const d=mkDome(4400,M.skyDome);d.position.set(MCX,0,MCZ);scene.add(d);window.__skyDome=d;}nightSky.visible=t==='night';scene.background=t==='indoor'?new THREE.Color(0xb8a65a).convertSRGBToLinear():(sky?null:new THREE.Color(0x88b8e8));
+  let P={day:{el:42,az:150,turb:5,ray:1.4,mie:.004,g:.8,fog:[0xbcd6ee,320,1900],sun:[0xfff3e2,2.6],hemi:[0xd6eaff,0x5d7a40,.45],exp:.66},
     sunset:{el:7,az:205,turb:9,ray:2.8,mie:.008,g:.88,fog:[0xf2b4a4,280,1700],sun:[0xffa58a,1.9],hemi:[0xffc6c8,0x6a4a50,.42],exp:.74},
     overcast:{el:55,az:120,turb:13,ray:.7,mie:.014,g:.75,fog:[0xb8c4b6,220,1400],sun:[0xf4f0e0,1.6],hemi:[0xe4ece0,0x46563a,.7],exp:.72},
     dusk:{el:9,az:-24,turb:10,ray:3,mie:.012,g:.9,fog:[0xeab58a,380,2500],sun:[0xffd0a0,2.5],hemi:[0xffdcbc,0x7a5a40,.55],exp:.66},
     dust:{el:24,az:235,turb:8,ray:1.1,mie:.012,g:.86,fog:[0xe9cc9e,240,1450],sun:[0xffdcae,2.55],hemi:[0xffe4c0,0x8a6a40,.5],exp:.64},
     night:{el:34,az:220,fog:[0x0e1338,90,760],sun:[0x8fa8ff,.95],hemi:[0x4a5a9a,0x1a1a14,.6],exp:1.05},
     indoor:{el:88,az:0,fog:[0xb8a65a,25,230],sun:[0xfff2c0,.45],hemi:[0xfff2bc,0x8a7840,1.15],exp:.95}}[t];
+  if(M.skyP)P=Object.assign({},P,M.skyP);
   sunDir.setFromSphericalCoords(1,THREE.MathUtils.degToRad(90-P.el),THREE.MathUtils.degToRad(P.az));
   scene.fog=new THREE.Fog(P.fog[0],P.fog[1],P.fog[2]);scene.fog.color.convertSRGBToLinear();
   sun.color.set(P.sun[0]).convertSRGBToLinear();sun.intensity=P.sun[1];hemi.color.set(P.hemi[0]).convertSRGBToLinear();hemi.groundColor.set(P.hemi[1]).convertSRGBToLinear();hemi.intensity=P.hemi[2];renderer.toneMappingExposure=P.exp;
@@ -3460,6 +3466,7 @@ function applyTheme(M){
   if(t==='night'){es.background=new THREE.Color(0x0c1030);for(let k=0;k<8;k++){const b=new THREE.Mesh(new THREE.BoxGeometry(6,2,1),new THREE.MeshBasicMaterial({color:0xffb060}));const a=k/8*Math.PI*2;b.position.set(Math.cos(a)*30,4+(k%3)*3,Math.sin(a)*30);b.lookAt(0,0,0);es.add(b);}
     const m=new THREE.Mesh(new THREE.SphereGeometry(4,12,8),new THREE.MeshBasicMaterial({color:0xdde6ff}));m.position.copy(sunDir).multiplyScalar(40);es.add(m);}
   else if(t==='indoor'){es.background=new THREE.Color(0xa89848);const c=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshBasicMaterial({color:0xfff6d8,side:THREE.DoubleSide}));c.rotation.x=Math.PI/2;c.position.y=20;es.add(c);}
+  else if(M.skyDome){es.add(mkDome(50,M.skyDome));const g=new THREE.Mesh(new THREE.CircleGeometry(40,24),new THREE.MeshBasicMaterial({color:M.grass[0]}));g.rotation.x=-Math.PI/2;g.position.y=-2;es.add(g);}
   else if(sky){skyP(sky);const s=new THREE.Sky();s.scale.setScalar(50);skyP(s);es.add(s);const g=new THREE.Mesh(new THREE.CircleGeometry(40,24),new THREE.MeshBasicMaterial({color:M.grass[0]}));g.rotation.x=-Math.PI/2;g.position.y=-2;es.add(g);}
   else es.background=new THREE.Color(0x88b8e8);
   if(envRT)envRT.dispose();envRT=pmrem.fromScene(es,.02);scene.environment=envRT.texture;
