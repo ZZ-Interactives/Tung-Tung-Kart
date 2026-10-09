@@ -4891,9 +4891,9 @@ function loadTurn(){
   if(RELAY.p)return RELAY.p;
   return RELAY.p=(async()=>{let ok=false;
     if(/^https?:$/.test(location.protocol)){try{const ac=new AbortController(),t=setTimeout(()=>ac.abort(),6000);const r=await fetch(RELAY.url,{cache:'no-store',signal:ac.signal});clearTimeout(t);const j=await r.json();
-      if(j&&j.ok&&Array.isArray(j.iceServers)&&j.iceServers.length){window.TT_PEER_CFG={config:{iceServers:j.iceServers.concat([{urls:'stun:stun.l.google.com:19302'}])}};ok=true;}
+      if(j&&j.ok&&Array.isArray(j.iceServers)&&j.iceServers.length){RELAY.via=j.via;window.TT_PEER_CFG={config:{iceServers:j.iceServers.concat([{urls:'stun:stun.l.google.com:19302'}])}};ok=true;}
       else netLog('Relay: '+((j&&j.code)==='not_configured'?'not set up on this site yet':'unavailable ('+((j&&j.code)||r.status)+')'));}catch(e){netLog('Relay: unavailable');}}
-    RELAY.ok=ok;RELAY.at=Date.now();RELAY.p=null;if(ok)netLog('Relay: ready');return ok;})();}
+    RELAY.ok=ok;RELAY.at=Date.now();RELAY.p=null;if(ok)netLog('Relay: ready ('+(RELAY.via||'relay')+')');return ok;})();}
 const iceWait=()=>RELAY.ok?6000:2500;
 function netIce(){const c=window.TT_PEER_CFG;if(c&&c.config&&c.config.iceServers)return c.config.iceServers;
   try{const d=window.peerjs&&window.peerjs.util&&window.peerjs.util.defaultConfig;if(d&&d.iceServers)return d.iceServers;}catch(e){}
