@@ -348,6 +348,8 @@ body.touch #speedo{right:auto;left:50%;transform:translateX(-50%);bottom:calc(va
 body.touch .fdkeys{display:none}
 body.free #timer,body.free #tower,body.free #rank,body.free #bottomL,body.free #itemSlot,body.free #warn{display:none!important}
 body.free #speedo{display:block!important}
+body.free #touch #tI{display:none!important}
+.fdopts .row{margin-top:2px}
 #fdHud{position:absolute;left:calc(var(--u)*2);top:calc(var(--u)*2 + env(safe-area-inset-top,0px));pointer-events:none}
 #fdHud[hidden]{display:none}
 .fdcard{display:flex;flex-direction:column;gap:3px;padding:10px 14px;border:3px solid #17142e;border-radius:12px;background:rgba(255,250,240,.94);color:#17142e;box-shadow:4px 5px 0 #17142e;min-width:170px}
@@ -794,6 +796,8 @@ body.touch #sHearts{top:calc(var(--u)*6 + env(safe-area-inset-top,0px))}
       <div id="fdBig"><img id="fdImg" alt=""><div class="mbcap"><b id="fdName"></b><span id="fdSub"></span></div></div>
       <h2>Scenery</h2><div class="seg wrap" id="fdBioSeg" role="radiogroup" aria-label="Scenery"></div>
       <h2>Time of day</h2><div class="seg" id="fdTimeSeg" role="radiogroup" aria-label="Time of day"></div>
+      <div class="row"><div><h2>Top speed</h2><div class="seg" id="fdFastSeg" role="radiogroup" aria-label="Top speed"></div></div><div><h2>Auto forward</h2><div class="seg" id="fdGasSeg" role="radiogroup" aria-label="Auto forward"></div></div></div>
+      <p class="fdnote" id="fdFastNote"></p>
       <p class="fdnote">The road never ends and is different every time. Drive off it whenever you like.<span class="fdkeys"><kbd>T</kbd> auto-drive <kbd>V</kbd> cinematic camera <kbd>R</kbd> back to road <kbd>H</kbd> hide HUD <kbd>Space</kbd> honk</span></p>
     </div>
     <h2 id="mapH">Choose a track</h2>
@@ -2342,7 +2346,7 @@ let SET;try{SET=Object.assign({},DEF,JSON.parse(store.get('tungtungkart1')||'{}'
 if(!store.get('tt_main_v1')){SET.racer=0;store.set('tt_main_v1','1');} /* Tung Tung is the featured, first-selected racer */
 var STORY_OVR=null;const saveSet=()=>store.set('tungtungkart1',JSON.stringify(STORY_OVR?Object.assign({},SET,STORY_OVR):SET));
 const CC={50:{top:28,acc:21},100:{top:34,acc:24},150:{top:40,acc:27},200:{top:47,acc:31}};
-const cc=()=>CC[SET.cc]||CC[150];
+const cc=()=>(FD&&FD.on&&FD.cc)||CC[SET.cc]||CC[150];
 const CPU={easy:{cap:.86,drift:.2,iq:.45,rocket:.15},normal:{cap:.95,drift:.55,iq:.75,rocket:.35},hard:{cap:1.01,drift:.9,iq:1,rocket:.6}};
 const IS_TOUCH=(()=>{try{const ua=navigator.userAgent||'',uad=navigator.userAgentData;
   if(uad&&typeof uad.mobile==='boolean'&&uad.mobile)return true;
@@ -4571,7 +4575,7 @@ function pollPad(){
 function playerControl(k){
   let steer=(input.right?1:0)-(input.left?1:0);if(Math.abs(pad.steer)>.15)steer=pad.steer;
   const brake=input.brake||pad.brake;
-  const gas=(input.gas||pad.gas||((SET.auto||IS_TOUCH)&&!STORY.on&&!brake))?1:0;
+  const gas=(input.gas||pad.gas||((FD&&FD.on?fdAutoGas():(SET.auto||IS_TOUCH))&&!STORY.on&&!brake))?1:0;
   if(SET.smart&&!k.air&&!k.fly&&!k.roam){const lim=HALF-1.2,l=k.lat;if(l>lim&&steer>-.5)steer=Math.min(steer,-.6*clamp((l-lim)/2,0,1));if(l<-lim&&steer<.5)steer=Math.max(steer,.6*clamp((-lim-l)/2,0,1));}
   return {steer,gas,brake:brake?1:0,drift:input.drift||pad.drift};
 }
@@ -4698,7 +4702,7 @@ function buildTower(){const t=$('tower');t.innerHTML='';towerRows.length=0;for(l
 function updateTower(){const sorted=rankAll();sorted.forEach((k,i)=>{const d=towerRows[i];if(!d)return;const key=k.rIdx;if(d._k!==key){d._k=key;d.querySelector('b').textContent=i+1;d.querySelector('i').style.background=hex(k.rc.color);d.querySelector('span').textContent=k.rc.name.split(' ')[0];}d.classList.toggle('me',k===player);});}
 const spCtx=$('speedo').getContext('2d');let spShown=-1;
 function drawSpeedo(k){const kmh=Math.round(Math.abs(k.speed)*3.6);if(kmh===spShown&&!(k.boostT>0))return;spShown=kmh;
-  const g=spCtx,W=220,c=W/2,r=88,a0=Math.PI*.75,a1=Math.PI*2.25,f=clamp(kmh/220,0,1);g.clearRect(0,0,W,W);
+  const g=spCtx,W=220,c=W/2,r=88,a0=Math.PI*.75,a1=Math.PI*2.25,f=clamp(kmh/(FD&&FD.on&&FD.cc?420:220),0,1);g.clearRect(0,0,W,W);
   g.beginPath();g.arc(c,c,r+14,0,7);g.fillStyle='rgba(12,10,40,.62)';g.fill();
   g.lineCap='round';g.lineWidth=14;g.strokeStyle='rgba(255,255,255,.14)';g.beginPath();g.arc(c,c,r,a0,a1);g.stroke();
   const gr=g.createLinearGradient(20,0,200,0);if(k.ghostT>0){gr.addColorStop(0,'#9dff3a');gr.addColorStop(1,'#7b4dff');}else{gr.addColorStop(0,'#3ee0ff');gr.addColorStop(.6,'#9dff3a');gr.addColorStop(1,k.boostT>0?'#ff7a1a':'#ffd23f');}
@@ -5010,6 +5014,60 @@ function sigHostLoop(room,me,accept,isBusy,onLost){
   tick();
   return ()=>{stop=true;clearTimeout(timer);};
 }
+/* ---- backup relay: Firebase Realtime Database (free Spark plan, no card). When a direct player-to-player link can't open
+   (school Wi-Fi blocks those), race messages travel through Firebase over an ordinary secure web connection instead.
+   Layout:  r/<room>/h = host id      r/<room>/x/<host>/<player+tag>/{o,u,d}  one link: o = open marker, u = player→host, d = host→player
+   Messages are batched (15 per second) and deleted as soon as they are read, so the database stays nearly empty. ---- */
+const FBR={url:window.TT_FB_URL||'https://tung-tung-kart-default-rtdb.firebaseio.com',db:null,p:null,ok:undefined};
+function fbLoadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.async=true;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+function fbWrap(d){return {
+  set:(p,v)=>d.ref(p).set(v),push:(p,v)=>d.ref(p).push(v),remove:p=>d.ref(p).remove(),get:p=>d.ref(p).once('value').then(s=>s.val()),
+  dropOnLeave:p=>d.ref(p).onDisconnect().remove(),
+  onAdd:(p,cb)=>{const r=d.ref(p),f=s=>cb(s.key,s.val());r.on('child_added',f);return()=>r.off('child_added',f);},
+  onRemove:(p,cb)=>{const r=d.ref(p),f=s=>cb(s.key);r.on('child_removed',f);return()=>r.off('child_removed',f);}};}
+function fbReady(){
+  if(FBR.ok!==undefined)return Promise.resolve(FBR.ok);
+  if(FBR.p)return FBR.p;
+  return FBR.p=(async()=>{let ok=false;
+    try{
+      if(window.TT_FB_MOCK){FBR.db=window.TT_FB_MOCK;ok=true;}
+      else if(/^https?:$/.test(location.protocol)&&FBR.url){
+        const V='https://cdn.jsdelivr.net/npm/firebase@9.23.0/',to=(p,ms)=>Promise.race([p,new Promise((_,j)=>setTimeout(()=>j('timeout'),ms))]);
+        if(!(window.firebase&&window.firebase.database)){await to(fbLoadScript(V+'firebase-app-compat.js'),9000);await to(fbLoadScript(V+'firebase-database-compat.js'),9000);}
+        const fb=window.firebase,app=(fb.apps||[]).find(a=>a.name==='ttk')||fb.initializeApp({databaseURL:FBR.url},'ttk'),d=app.database();
+        ok=await new Promise(res=>{const r=d.ref('.info/connected');let t=0;const f=s=>{if(s.val()===true){clearTimeout(t);r.off('value',f);res(true);}};t=setTimeout(()=>{r.off('value',f);res(false);},9000);r.on('value',f);});
+        if(ok)FBR.db=fbWrap(d);}
+    }catch(e){ok=false;}
+    FBR.ok=ok;FBR.p=null;netLog('Backup relay (Firebase): '+(ok?'online':'not reachable'));return ok;})();}
+/* one link over Firebase; outgoing messages are batched and repeated presence updates merged */
+function fbConn(base,inbox,outbox,onEnd){const db=FBR.db;let offs=[],q=[],tm=0;
+  const flush=()=>{tm=0;if(!q.length)return;const b=q;q=[];try{db.push(base+'/'+outbox,{j:JSON.stringify(b)});}catch(e){}};
+  const send=m=>{if(m&&m.t==='p'&&m.p){const last=q[q.length-1];if(last&&last.t==='p'&&last.from===m.from){last.p=Object.assign({},last.p,m.p);}else q.push({t:'p',from:m.from,p:Object.assign({},m.p)});}
+    else if(m&&m.t==='ping'){if(!q.length)q.push(m);}else q.push(m);if(!tm)tm=setTimeout(flush,66);};
+  const c=netConn(m=>{if(!c.open&&m&&m.t!=='bye')return;send(JSON.parse(JSON.stringify(m)));},()=>{flush();for(const f of offs)f();offs=[];clearTimeout(tm);if(onEnd)setTimeout(onEnd,400);},'Firebase relay',null);
+  offs.push(db.onAdd(base+'/'+inbox,(k,v)=>{db.remove(base+'/'+inbox+'/'+k);let b=null;try{b=JSON.parse(v&&v.j);}catch(e){}if(Array.isArray(b))for(const m of b){if(m)c._in(m);}}));
+  return c;}
+/* host: listen for players knocking on this host's door */
+function fbHostLoop(room,me,accept){let stop=false;const db=FBR.db,root='r/'+room,mine=root+'/x/'+me,links=new Map();
+  db.set(root+'/h',me);db.dropOnLeave(root+'/h');db.dropOnLeave(mine);
+  const offA=db.onAdd(mine,jid=>{if(stop||!/^[a-z0-9]{6,30}$/.test(jid))return;const old=links.get(jid);if(old){links.delete(jid);old._gone();}
+    const base=mine+'/'+jid;let c=null;c=fbConn(base,'u','d',()=>{if(links.get(jid)===c)links.delete(jid);db.remove(base);});links.set(jid,c);accept(c);});
+  const offR=db.onRemove(mine,jid=>{const c=links.get(jid);if(c){links.delete(jid);c._gone();}});
+  netLog('Backup relay: room '+room.toUpperCase()+' is listed');
+  return ()=>{stop=true;offA();offR();for(const c of links.values())c.close();
+    db.get(root+'/h').then(h=>{if(h===me)db.remove(root+'/h');}).catch(()=>{});setTimeout(()=>db.remove(mine),500);};}
+/* player: knock on the host's door. target is 'ttkp-<host id>' when we know the host, or 'ttk-<room>' for the room's listed host */
+async function fbDial(room,me,target,cancelled){
+  if(!(await fbReady()))throw {code:'unavailable'};const db=FBR.db,root='r/'+room;
+  let hid=String(target||'').indexOf('ttkp-')===0?String(target).slice(5):null;
+  if(!hid){hid=await db.get(root+'/h');if(!hid||typeof hid!=='string')throw {code:'not_found'};}
+  if(cancelled())throw {code:'cancel'};
+  const key=me+nrid(4),base=root+'/x/'+hid+'/'+key; /* a fresh folder per attempt, so cleanup of an old link never hits a new one */
+  db.dropOnLeave(base);await db.set(base+'/o',1);
+  let offR=null;const c=fbConn(base,'d','u',()=>{if(offR)offR();db.remove(base);});
+  offR=db.onRemove(root+'/x/'+hid,k=>{if(k===key)c._gone();});
+  netLog('Knocking through the backup relay');
+  return c;}
 function p2pApi(){
   if(typeof RTCPeerConnection==='undefined')return null;
   return {name:'p2p',join:(name,create)=>p2pRoom(String(name).replace(/^tt-/,'').toLowerCase().replace(/[^a-z0-9]/g,''),create)};
@@ -5093,17 +5151,20 @@ async function p2pRoom(room,create){
     dc.on('error',()=>fin(rej,{code:'blocked'}));});
   /* try every matchmaking route at once; the first channel that opens wins and says hello */
   const connectHost=async(pjTarget,quick)=>{
-    const lock={won:false};const errsSeen=[];
+    const lock={won:false};const errsSeen=[],dfail={n:0};
     const attempt=async(kind)=>{
       let c;
       if(kind==='pj')c=await dialPJ(pjTarget,lock);
-      else{if(!(await sigAvailable()))throw {code:'unavailable'};
+      else if(kind==='sig'){if(!(await sigAvailable()))throw {code:'unavailable'};
         if(st.peer&&!st.peer.destroyed){for(let i=0;i<(quick?10:25)&&!lock.won;i++)await nsleep(100);}
         if(lock.won)throw {code:'cancel'};c=await sigDial(room,me,()=>lock.won);}
+      else if(kind==='fb'){const t0=performance.now(),wait=quick?1500:4000;
+        while(!lock.won&&performance.now()-t0<wait&&dfail.n<2)await nsleep(100);
+        if(lock.won)throw {code:'cancel'};c=await fbDial(room,me,pjTarget,()=>lock.won);}
       if(lock.won){c.close();throw {code:'cancel'};}
       lock.won=true;
       try{const w=await helloTo(c);return {c,w};}catch(e){lock.won=false;throw e;}};
-    const tries=['pj','sig'].map(k=>attempt(k).catch(e=>{errsSeen.push(e&&e.code||'error');throw e;}));
+    const tries=['pj','sig','fb'].map(k=>attempt(k).catch(e=>{errsSeen.push(e&&e.code||'error');if(k!=='fb')dfail.n++;throw e;}));
     let tmr;const limit=new Promise((_,rej)=>{tmr=setTimeout(()=>{if(!lock.won){lock.won=true;errsSeen.push('timeout');}rej({code:'timeout'});},quick?6500:40000);});
     try{const r=await Promise.race([Promise.any(tries),limit]);clearTimeout(tmr);return r;}
     catch(e){clearTimeout(tmr);const has=c=>errsSeen.includes(c);if(has('not_host'))throw {code:'not_host'};throw {code:has('full')?'full':has('blocked')||has('timeout')?'blocked':has('not_found')?'not_found':'upstream_error'};}
@@ -5119,6 +5180,7 @@ async function p2pRoom(room,create){
     for(const p of w.peers||[]){if(p.peer===me)continue;seen.add(p.peer);addPeer(p.peer,p.presence||{});}
     for(const id of [...table.keys()])if(!seen.has(id))dropLocal(id);
     c.onmsg=onHostMsg;c.onclose=()=>{if(st.hostConn!==c||st.dead)return;st.hostConn=null;hostLost();};
+    c.send({t:'p',p:Object.assign({},table.get(me))}); /* anything we changed while the hello was in flight */
     netLog('Connected to the host ('+c.via+')');kick();};
   /* ---------- host migration ---------- */
   const elect=skip=>{let b=null;for(const [id,pr] of table){if(skip.has(id))continue;const t=+pr.t0||1e15;if(!b||t<b.t||(t===b.t&&id<b.id))b={t,id};}return b&&b.id;};
@@ -5126,8 +5188,10 @@ async function p2pRoom(room,create){
     st.role='host';st.hostId=me;st.hostConn=null;netLog('You are the host now');status('host');
     for(const id of table.keys())if(id!==me&&!conns.has(id))rejoin.set(id,setTimeout(()=>{rejoin.delete(id);if(!conns.has(id))dropPeer(id);},30000));
     if(st.peer)claimAlias(false);
+    fbHostStart();
     if(await sigAvailable()){try{await sigCall({op:'host',room,id:me,prev});}catch(e){}if(!st.dead&&st.role==='host')st.stopSig=sigHostLoop(room,me,accept,()=>busy(),()=>{});}
   };
+  const fbHostStart=()=>fbReady().then(ok=>{if(ok&&!st.dead&&st.role==='host'&&!st.stopFb)st.stopFb=fbHostLoop(room,me,accept);});
   const busy=()=>{for(const p of table.values())if(p.ph==='race')return true;return conns.size>=11;};
   const hostLost=async()=>{
     if(st.migrating||st.dead)return;st.migrating=true;const old=st.hostId,bye=st.byeFrom===old;
@@ -5148,6 +5212,7 @@ async function p2pRoom(room,create){
     }finally{st.migrating=false;}
   };
   /* ---------- start ---------- */
+  const fbP=fbReady();
   const [p0]=await Promise.all([openPeer('ttkp-'+me),sigAvailable()]);
   if(p0&&p0!=='taken'){setPeer(p0);netLog('PeerJS matchmaking: online');}else netLog(pjOk?'PeerJS matchmaking: not reachable':'PeerJS library did not load');
   const R={name:'p2p',
@@ -5162,23 +5227,27 @@ async function p2pRoom(room,create){
         if(now&&navigator.sendBeacon)navigator.sendBeacon(SIG.url,new Blob([body],{type:'text/plain'}));else sigCall({op:'close',room,id:me},3000).catch(()=>{});}}
       else if(st.hostConn)st.hostConn.send({t:'bye'});
       st.dead=true;netLog('Left the room');
-      (now?f=>f():f=>setTimeout(f,150))(()=>{for(const c of conns.values())c.close();if(st.hostConn)st.hostConn.close();if(st.stopSig)st.stopSig();
+      (now?f=>f():f=>setTimeout(f,150))(()=>{for(const c of conns.values())c.close();if(st.hostConn)st.hostConn.close();if(st.stopSig)st.stopSig();if(st.stopFb)st.stopFb();
         for(const t of rejoin.values())clearTimeout(t);for(const f of cleanups)f();
         try{if(st.alias)st.alias.destroy();}catch(e){}try{if(st.peer)st.peer.destroy();}catch(e){}},150);}};
-  const abort=e=>{st.dead=true;for(const f of cleanups)f();if(st.stopSig)st.stopSig();try{if(st.alias)st.alias.destroy();}catch(x){}try{if(st.peer)st.peer.destroy();}catch(x){}throw e;};
-  const anyRoute=st.peer||SIG.ok;
+  const abort=e=>{st.dead=true;for(const f of cleanups)f();if(st.stopSig)st.stopSig();if(st.stopFb)st.stopFb();try{if(st.alias)st.alias.destroy();}catch(x){}try{if(st.peer)st.peer.destroy();}catch(x){}throw e;};
+  if(!st.peer&&!SIG.ok)await fbP;
+  const anyRoute=st.peer||SIG.ok||FBR.ok;
   if(!anyRoute)abort({code:'upstream_error',message:'no matchmaking reachable'});
   if(create){
     st.role='host';st.hostId=me;
     let pj=null,sg=null;
     if(st.peer){pj=await claimAlias(true);if(pj==='taken')abort({code:'exists'});}
     if(SIG.ok){try{const r=await sigCall({op:'host',room,id:me});sg=r.ok?'ok':r.code;}catch(e){sg='down';}if(sg==='exists')abort({code:'exists'});}
-    if(pj!=='ok'&&sg!=='ok')abort({code:'upstream_error',message:'no matchmaking reachable'});
+    let fbx=null;if(FBR.ok){try{fbx=await FBR.db.get('r/'+room+'/h');}catch(e){}if(fbx&&pj!=='ok'&&sg!=='ok')abort({code:'exists'});}
+    if(pj!=='ok'&&sg!=='ok'&&!FBR.ok)abort({code:'upstream_error',message:'no matchmaking reachable'});
     if(sg==='ok')st.stopSig=sigHostLoop(room,me,accept,()=>busy(),()=>{});
-    netLog('Room '+room.toUpperCase()+' is open'+(pj==='ok'&&sg==='ok'?' (both matchmaking services)':pj==='ok'?' (PeerJS only)':' (site matchmaking only)'));
+    fbHostStart();
+    netLog('Room '+room.toUpperCase()+' is open'+(pj==='ok'&&sg==='ok'?' (both matchmaking services)':pj==='ok'?' (PeerJS only)':sg==='ok'?' (site matchmaking only)':' (backup relay only)'));
   }else{
     netLog('Looking for room '+room.toUpperCase()+'…');
-    try{adoptHost(await connectHost('ttk-'+room,false));}catch(e){abort(e);}
+    try{adoptHost(await connectHost('ttk-'+room,false));}
+    catch(e){if((e.code==='blocked'||e.code==='timeout')&&FBR.ok&&!st.dead){netLog('Trying once more…');try{adoptHost(await connectHost('ttk-'+room,false));}catch(e2){abort(e2);}}else abort(e);}
   }
   return R;
 }
@@ -7952,8 +8021,10 @@ const FD_TIME={
   noon:{sky:'day',skyP:{el:52,az:160,fog:[0xbcd6ee,260,1050]},cloud:[1,1,1],ring:0x8fa6c2},
   sunset:{sky:'dusk',skyP:{el:6,az:250,fog:[0xeab58a,220,1050]},cloud:[1,.72,.58],ring:0x9a7a8a},
   night:{sky:'night',skyP:{fog:[0x0e1338,110,720]},cloud:[.1,.11,.2],ring:0x141a3c}};
-let FDOPT;try{FDOPT=Object.assign({bio:'mixed',time:'noon'},JSON.parse(store.get('tungtung-free')||'{}'));}catch(e){FDOPT={bio:'mixed',time:'noon'};}
+let FDOPT;try{FDOPT=Object.assign({bio:'mixed',time:'noon',fast:'off',gas:''},JSON.parse(store.get('tungtung-free')||'{}'));}catch(e){FDOPT={bio:'mixed',time:'noon',fast:'off',gas:''};}
 if(!FD_TIME[FDOPT.time])FDOPT.time='noon';if(FD_BIO_IDS.indexOf(FDOPT.bio)<0)FDOPT.bio='mixed';
+function fdAutoGas(){return FDOPT.gas?FDOPT.gas==='on':(SET.auto||IS_TOUCH);}
+const FD_FAST={top:115,acc:30};
 function fdSaveOpt(){store.set('tungtung-free',JSON.stringify(FDOPT));}
 SONGS.cruise={tempo:84,wave:'triangle',soft:true,bass:[43,0,50,0,47,0,50,0, 40,0,47,0,43,0,47,0, 36,0,43,0,40,0,43,0, 38,0,45,0,42,0,45,0],
   lead:[71,0,0,74,0,0,79,0, 78,0,76,0,74,0,0,0, 72,0,0,76,0,0,79,0, 76,0,0,0,0,0,0,0, 74,0,0,78,0,0,81,0, 79,0,78,0,76,0,74,0, 71,0,72,0,74,0,0,0, 67,0,0,0,0,0,0,0]};
@@ -8310,7 +8381,7 @@ function fdStart(){stopMusic();initAudio();
     const G=new THREE.Group();world.add(G);const seed=(Math.random()*4294967295)>>>0,o=fdOpts();
     FD={on:true,G,seed,rand:rng(seed),sx:(rng(seed^7)()-.5)*90000,sz:(rng(seed^13)()-.5)*90000,fix:FDOPT.bio==='mixed'?-1:FD_BIO_IDS.indexOf(FDOPT.bio)-1,
       chunks:new Map(),pieces:new Map(),pieceJobs:new Set(),jobs:[],want:null,pk:'',NR:o.NR,FR:o.FR,segN:o.segN,segF:o.segF,farTrees:o.far,
-      dist:0,auto:false,cine:{on:false,t:0,pos:new V3(),look:new V3()},bio:-1,bioT:0,toastT:0,lastD:1e9,hud:true};
+      dist:0,auto:false,cc:FDOPT.fast==='on'?FD_FAST:null,cine:{on:false,t:0,pos:new V3(),look:new V3()},bio:-1,bioT:0,toastT:0,lastD:1e9,hud:true};
     fdAssets();fdRoadInit();fdGrowTo(1400);
     /* a fake one-point track so the shared kart code has something to point at */
     const i0=Math.round(FDK.BACK/FDK.DS),h0=FD.rh[i0];C=[new V3(FD.rx[i0],FD.ry[i0],FD.rz[i0])];T=[new V3(Math.sin(h0),0,Math.cos(h0))];R=[new V3(-T[0].z,0,T[0].x)];N=1;SEG=[2];ELEV=[false];GAP=[false];EDGE=[99];CURV=[0];TURN=[0];RL=[0];GAP_A=GAP_B=-1;MCX=C[0].x;MCZ=C[0].z;GS=[];ES=[];
@@ -8416,10 +8487,13 @@ function fdArtURL(bio,time,W,H){const k=bio+time+W;if(!FD_ART[k]){const c=docume
 function fdMenuInit(){$('artFree').src=fdArtURL('mixed','sunset',640,820);
   const mk=(id,vals,labels,key)=>{const el=$(id);el.innerHTML='';vals.forEach((v,i)=>{const b=document.createElement('button');b.setAttribute('role','radio');b.dataset.v=v;b.textContent=labels[i];el.appendChild(b);});
     el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;FDOPT[key]=b.dataset.v;fdSaveOpt();fdSyncMenu();});};
-  mk('fdBioSeg',FD_BIO_IDS,['Mixed','Meadow','Forest','Autumn','Desert','Snow'],'bio');mk('fdTimeSeg',['morning','noon','sunset','night'],['Morning','Noon','Sunset','Night'],'time');}
+  mk('fdBioSeg',FD_BIO_IDS,['Mixed','Meadow','Forest','Autumn','Desert','Snow'],'bio');mk('fdTimeSeg',['morning','noon','sunset','night'],['Morning','Noon','Sunset','Night'],'time');
+  mk('fdFastSeg',['off','on'],['Normal','Unlocked'],'fast');mk('fdGasSeg',['on','off'],['On','Off'],'gas');}
 function fdSyncMenu(){const on=MODE==='free';$('menu').classList.toggle('free',on);if(!on)return;
   $('crumbT').textContent='Free Drive';$('go').textContent='Start driving';
-  for(const [id,key] of[['fdBioSeg','bio'],['fdTimeSeg','time']])[...$(id).children].forEach(b=>b.setAttribute('aria-checked',b.dataset.v===FDOPT[key]));
+  const cur={bio:FDOPT.bio,time:FDOPT.time,fast:FDOPT.fast,gas:fdAutoGas()?'on':'off'};
+  for(const [id,key] of[['fdBioSeg','bio'],['fdTimeSeg','time'],['fdFastSeg','fast'],['fdGasSeg','gas']])[...$(id).children].forEach(b=>b.setAttribute('aria-checked',b.dataset.v===cur[key]));
+  $('fdFastNote').textContent=FDOPT.fast==='on'?'No speed limit: up to about 400 km/h, so brake into the bends.':'Normal top speed for your engine class.';
   $('fdImg').src=fdArtURL(FDOPT.bio,FDOPT.time,640,400);
   const nm={mixed:'Every biome, one road',meadow:'Green Meadows',forest:'Pine Forest',autumn:'Maple Hills',desert:'Red Rock Desert',snow:'Frozen Peaks'}[FDOPT.bio];$('fdName').textContent=nm;
   $('fdSub').textContent={morning:'Early light, long shadows',noon:'Blue skies, clear views',sunset:'Golden hour, warm skies',night:'Stars out, headlights on'}[FDOPT.time];}
@@ -8440,7 +8514,7 @@ async function boot(){
     buildMap(SET.map);buildMenu();setupComposer();applyQuality();resize();setMuted(SET.muted);try{if(showScene)renderer.compile(showScene,camera);}catch(e){}
     startDemo();$('title').hidden=false;$('loading').hidden=true;setTimeout(()=>{try{artIdle();}catch(e){}},4000);setTimeout(prewarmKarts,2500);try{sessionStorage.removeItem('ttk-gl-retry');}catch(e){}
     requestAnimationFrame(frame);
-    window.__gk={get RAMPS(){return RAMPS;},get PADS(){return PADS;},leaveTitle,pickMode,backToModes,GP,SHOTS,locate,coins:()=>coins,sim:n=>{for(let i=0;i<n;i++){S.t+=1/30;animateWorld(1/30);simulate(1/30);}},S,karts:()=>karts,player:()=>player,startRace,beginCountdown,input,SET,get N(){return N;},get GAP_A(){return GAP_A;},get GAP_B(){return GAP_B;},get C(){return C;},buildMap,selRacer,aerial,MAPS,shotCam,grab,scene,placeSun,clearRace,placeKart,updateKartVisuals,straightest,gridSlot,camera,setPlayer:k=>{player=k;},get NET(){return NET;},onlineArt,get world(){return world;},get THREE(){return THREE;},get COLL(){return COLL;},get S3(){return S3;},s3Frame,s3Lock,s3Sim:(n,f)=>{for(let i=0;i<n;i++){S.t+=1/30;if(f)f();s3Frame(1/30);}},s3Start,s3Launch,s3BossStart,s3EndStart,s3BuildHighway,s3Respawn,s3Hurt,s3Spawn,s3Results,s3W,s3H,s3Chunks,get MUS(){return MUS;},STORY,STAGES,openStory,loadSlot,storyStartRace,briefNext,playCine,storyExitRace,showHub,storyResults,greenTerrain,spawnTufts,get TERRAIN(){return TERRAIN;},get MAP(){return MAP;},hitKart,finishKart,get FD(){return FD;},fdStart,fdSim:(n,dt)=>{dt=dt||1/30;const t0=performance.now();for(let i=0;i<n;i++){S.t+=dt;fdFrame(dt,dt);}return performance.now()-t0;},fdBench:(lvl,n)=>{const out=[];for(let i=0;i<n;i++){const t0=performance.now();const ch=fdBuildChunk(Math.floor(player.x/128)+i-2,Math.floor(player.z/128)+3,lvl);out.push(+(performance.now()-t0).toFixed(1));fdFree(ch.g);}return out;},get FDA(){return FDA;}};
+    window.__gk={get RAMPS(){return RAMPS;},get PADS(){return PADS;},leaveTitle,pickMode,backToModes,GP,SHOTS,locate,coins:()=>coins,sim:n=>{for(let i=0;i<n;i++){S.t+=1/30;animateWorld(1/30);simulate(1/30);}},S,karts:()=>karts,player:()=>player,startRace,beginCountdown,input,SET,get N(){return N;},get GAP_A(){return GAP_A;},get GAP_B(){return GAP_B;},get C(){return C;},buildMap,selRacer,aerial,MAPS,shotCam,grab,scene,placeSun,clearRace,placeKart,updateKartVisuals,straightest,gridSlot,camera,setPlayer:k=>{player=k;},get NET(){return NET;},onlineArt,get world(){return world;},get THREE(){return THREE;},get COLL(){return COLL;},get S3(){return S3;},s3Frame,s3Lock,s3Sim:(n,f)=>{for(let i=0;i<n;i++){S.t+=1/30;if(f)f();s3Frame(1/30);}},s3Start,s3Launch,s3BossStart,s3EndStart,s3BuildHighway,s3Respawn,s3Hurt,s3Spawn,s3Results,s3W,s3H,s3Chunks,get MUS(){return MUS;},STORY,STAGES,openStory,loadSlot,storyStartRace,briefNext,playCine,storyExitRace,showHub,storyResults,greenTerrain,spawnTufts,get TERRAIN(){return TERRAIN;},get MAP(){return MAP;},hitKart,finishKart,get FD(){return FD;},fdStart,p2pApi,get FBR(){return FBR;},fdSim:(n,dt)=>{dt=dt||1/30;const t0=performance.now();for(let i=0;i<n;i++){S.t+=dt;fdFrame(dt,dt);}return performance.now()-t0;},fdBench:(lvl,n)=>{const out=[];for(let i=0;i<n;i++){const t0=performance.now();const ch=fdBuildChunk(Math.floor(player.x/128)+i-2,Math.floor(player.z/128)+3,lvl);out.push(+(performance.now()-t0).toFixed(1));fdFree(ch.g);}return out;},get FDA(){return FDA;}};
   }catch(err){console.error(err);const msg=String(err&&err.message||err),gl=GL_LOST||/webgl|shader|context/i.test(msg);
     let n=0;try{n=+sessionStorage.getItem('ttk-gl-retry')||0;}catch(e){}
     if(gl&&n<2){try{sessionStorage.setItem('ttk-gl-retry',n+1);}catch(e){}$('loading').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;max-width:640px"><span>Graphics hiccup, restarting…</span></div>';setTimeout(()=>location.reload(),900);return;}

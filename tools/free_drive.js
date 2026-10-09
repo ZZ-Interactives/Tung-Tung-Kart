@@ -18,8 +18,10 @@ const FD_TIME={
   noon:{sky:'day',skyP:{el:52,az:160,fog:[0xbcd6ee,260,1050]},cloud:[1,1,1],ring:0x8fa6c2},
   sunset:{sky:'dusk',skyP:{el:6,az:250,fog:[0xeab58a,220,1050]},cloud:[1,.72,.58],ring:0x9a7a8a},
   night:{sky:'night',skyP:{fog:[0x0e1338,110,720]},cloud:[.1,.11,.2],ring:0x141a3c}};
-let FDOPT;try{FDOPT=Object.assign({bio:'mixed',time:'noon'},JSON.parse(store.get('tungtung-free')||'{}'));}catch(e){FDOPT={bio:'mixed',time:'noon'};}
+let FDOPT;try{FDOPT=Object.assign({bio:'mixed',time:'noon',fast:'off',gas:''},JSON.parse(store.get('tungtung-free')||'{}'));}catch(e){FDOPT={bio:'mixed',time:'noon',fast:'off',gas:''};}
 if(!FD_TIME[FDOPT.time])FDOPT.time='noon';if(FD_BIO_IDS.indexOf(FDOPT.bio)<0)FDOPT.bio='mixed';
+function fdAutoGas(){return FDOPT.gas?FDOPT.gas==='on':(SET.auto||IS_TOUCH);}
+const FD_FAST={top:115,acc:30};
 function fdSaveOpt(){store.set('tungtung-free',JSON.stringify(FDOPT));}
 SONGS.cruise={tempo:84,wave:'triangle',soft:true,bass:[43,0,50,0,47,0,50,0, 40,0,47,0,43,0,47,0, 36,0,43,0,40,0,43,0, 38,0,45,0,42,0,45,0],
   lead:[71,0,0,74,0,0,79,0, 78,0,76,0,74,0,0,0, 72,0,0,76,0,0,79,0, 76,0,0,0,0,0,0,0, 74,0,0,78,0,0,81,0, 79,0,78,0,76,0,74,0, 71,0,72,0,74,0,0,0, 67,0,0,0,0,0,0,0]};
@@ -376,7 +378,7 @@ function fdStart(){stopMusic();initAudio();
     const G=new THREE.Group();world.add(G);const seed=(Math.random()*4294967295)>>>0,o=fdOpts();
     FD={on:true,G,seed,rand:rng(seed),sx:(rng(seed^7)()-.5)*90000,sz:(rng(seed^13)()-.5)*90000,fix:FDOPT.bio==='mixed'?-1:FD_BIO_IDS.indexOf(FDOPT.bio)-1,
       chunks:new Map(),pieces:new Map(),pieceJobs:new Set(),jobs:[],want:null,pk:'',NR:o.NR,FR:o.FR,segN:o.segN,segF:o.segF,farTrees:o.far,
-      dist:0,auto:false,cine:{on:false,t:0,pos:new V3(),look:new V3()},bio:-1,bioT:0,toastT:0,lastD:1e9,hud:true};
+      dist:0,auto:false,cc:FDOPT.fast==='on'?FD_FAST:null,cine:{on:false,t:0,pos:new V3(),look:new V3()},bio:-1,bioT:0,toastT:0,lastD:1e9,hud:true};
     fdAssets();fdRoadInit();fdGrowTo(1400);
     /* a fake one-point track so the shared kart code has something to point at */
     const i0=Math.round(FDK.BACK/FDK.DS),h0=FD.rh[i0];C=[new V3(FD.rx[i0],FD.ry[i0],FD.rz[i0])];T=[new V3(Math.sin(h0),0,Math.cos(h0))];R=[new V3(-T[0].z,0,T[0].x)];N=1;SEG=[2];ELEV=[false];GAP=[false];EDGE=[99];CURV=[0];TURN=[0];RL=[0];GAP_A=GAP_B=-1;MCX=C[0].x;MCZ=C[0].z;GS=[];ES=[];
@@ -482,10 +484,13 @@ function fdArtURL(bio,time,W,H){const k=bio+time+W;if(!FD_ART[k]){const c=docume
 function fdMenuInit(){$('artFree').src=fdArtURL('mixed','sunset',640,820);
   const mk=(id,vals,labels,key)=>{const el=$(id);el.innerHTML='';vals.forEach((v,i)=>{const b=document.createElement('button');b.setAttribute('role','radio');b.dataset.v=v;b.textContent=labels[i];el.appendChild(b);});
     el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;FDOPT[key]=b.dataset.v;fdSaveOpt();fdSyncMenu();});};
-  mk('fdBioSeg',FD_BIO_IDS,['Mixed','Meadow','Forest','Autumn','Desert','Snow'],'bio');mk('fdTimeSeg',['morning','noon','sunset','night'],['Morning','Noon','Sunset','Night'],'time');}
+  mk('fdBioSeg',FD_BIO_IDS,['Mixed','Meadow','Forest','Autumn','Desert','Snow'],'bio');mk('fdTimeSeg',['morning','noon','sunset','night'],['Morning','Noon','Sunset','Night'],'time');
+  mk('fdFastSeg',['off','on'],['Normal','Unlocked'],'fast');mk('fdGasSeg',['on','off'],['On','Off'],'gas');}
 function fdSyncMenu(){const on=MODE==='free';$('menu').classList.toggle('free',on);if(!on)return;
   $('crumbT').textContent='Free Drive';$('go').textContent='Start driving';
-  for(const [id,key] of[['fdBioSeg','bio'],['fdTimeSeg','time']])[...$(id).children].forEach(b=>b.setAttribute('aria-checked',b.dataset.v===FDOPT[key]));
+  const cur={bio:FDOPT.bio,time:FDOPT.time,fast:FDOPT.fast,gas:fdAutoGas()?'on':'off'};
+  for(const [id,key] of[['fdBioSeg','bio'],['fdTimeSeg','time'],['fdFastSeg','fast'],['fdGasSeg','gas']])[...$(id).children].forEach(b=>b.setAttribute('aria-checked',b.dataset.v===cur[key]));
+  $('fdFastNote').textContent=FDOPT.fast==='on'?'No speed limit: up to about 400 km/h, so brake into the bends.':'Normal top speed for your engine class.';
   $('fdImg').src=fdArtURL(FDOPT.bio,FDOPT.time,640,400);
   const nm={mixed:'Every biome, one road',meadow:'Green Meadows',forest:'Pine Forest',autumn:'Maple Hills',desert:'Red Rock Desert',snow:'Frozen Peaks'}[FDOPT.bio];$('fdName').textContent=nm;
   $('fdSub').textContent={morning:'Early light, long shadows',noon:'Blue skies, clear views',sunset:'Golden hour, warm skies',night:'Stars out, headlights on'}[FDOPT.time];}
