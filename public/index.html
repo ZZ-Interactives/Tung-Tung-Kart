@@ -5014,6 +5014,60 @@ function sigHostLoop(room,me,accept,isBusy,onLost){
   tick();
   return ()=>{stop=true;clearTimeout(timer);};
 }
+/* ---- backup relay: Firebase Realtime Database (free Spark plan, no card). When a direct player-to-player link can't open
+   (school Wi-Fi blocks those), race messages travel through Firebase over an ordinary secure web connection instead.
+   Layout:  r/<room>/h = host id      r/<room>/x/<host>/<player+tag>/{o,u,d}  one link: o = open marker, u = player→host, d = host→player
+   Messages are batched (15 per second) and deleted as soon as they are read, so the database stays nearly empty. ---- */
+const FBR={url:window.TT_FB_URL||'https://tung-tung-kart-default-rtdb.firebaseio.com',db:null,p:null,ok:undefined};
+function fbLoadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.async=true;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+function fbWrap(d){return {
+  set:(p,v)=>d.ref(p).set(v),push:(p,v)=>d.ref(p).push(v),remove:p=>d.ref(p).remove(),get:p=>d.ref(p).once('value').then(s=>s.val()),
+  dropOnLeave:p=>d.ref(p).onDisconnect().remove(),
+  onAdd:(p,cb)=>{const r=d.ref(p),f=s=>cb(s.key,s.val());r.on('child_added',f);return()=>r.off('child_added',f);},
+  onRemove:(p,cb)=>{const r=d.ref(p),f=s=>cb(s.key);r.on('child_removed',f);return()=>r.off('child_removed',f);}};}
+function fbReady(){
+  if(FBR.ok!==undefined)return Promise.resolve(FBR.ok);
+  if(FBR.p)return FBR.p;
+  return FBR.p=(async()=>{let ok=false;
+    try{
+      if(window.TT_FB_MOCK){FBR.db=window.TT_FB_MOCK;ok=true;}
+      else if(/^https?:$/.test(location.protocol)&&FBR.url){
+        const V='https://cdn.jsdelivr.net/npm/firebase@9.23.0/',to=(p,ms)=>Promise.race([p,new Promise((_,j)=>setTimeout(()=>j('timeout'),ms))]);
+        if(!(window.firebase&&window.firebase.database)){await to(fbLoadScript(V+'firebase-app-compat.js'),9000);await to(fbLoadScript(V+'firebase-database-compat.js'),9000);}
+        const fb=window.firebase,app=(fb.apps||[]).find(a=>a.name==='ttk')||fb.initializeApp({databaseURL:FBR.url},'ttk'),d=app.database();
+        ok=await new Promise(res=>{const r=d.ref('.info/connected');let t=0;const f=s=>{if(s.val()===true){clearTimeout(t);r.off('value',f);res(true);}};t=setTimeout(()=>{r.off('value',f);res(false);},9000);r.on('value',f);});
+        if(ok)FBR.db=fbWrap(d);}
+    }catch(e){ok=false;}
+    FBR.ok=ok;FBR.p=null;netLog('Backup relay (Firebase): '+(ok?'online':'not reachable'));return ok;})();}
+/* one link over Firebase; outgoing messages are batched and repeated presence updates merged */
+function fbConn(base,inbox,outbox,onEnd){const db=FBR.db;let offs=[],q=[],tm=0;
+  const flush=()=>{tm=0;if(!q.length)return;const b=q;q=[];try{db.push(base+'/'+outbox,{j:JSON.stringify(b)});}catch(e){}};
+  const send=m=>{if(m&&m.t==='p'&&m.p){const last=q[q.length-1];if(last&&last.t==='p'&&last.from===m.from){last.p=Object.assign({},last.p,m.p);}else q.push({t:'p',from:m.from,p:Object.assign({},m.p)});}
+    else if(m&&m.t==='ping'){if(!q.length)q.push(m);}else q.push(m);if(!tm)tm=setTimeout(flush,66);};
+  const c=netConn(m=>{if(!c.open&&m&&m.t!=='bye')return;send(JSON.parse(JSON.stringify(m)));},()=>{flush();for(const f of offs)f();offs=[];clearTimeout(tm);if(onEnd)setTimeout(onEnd,400);},'Firebase relay',null);
+  offs.push(db.onAdd(base+'/'+inbox,(k,v)=>{db.remove(base+'/'+inbox+'/'+k);let b=null;try{b=JSON.parse(v&&v.j);}catch(e){}if(Array.isArray(b))for(const m of b){if(m)c._in(m);}}));
+  return c;}
+/* host: listen for players knocking on this host's door */
+function fbHostLoop(room,me,accept){let stop=false;const db=FBR.db,root='r/'+room,mine=root+'/x/'+me,links=new Map();
+  db.set(root+'/h',me);db.dropOnLeave(root+'/h');db.dropOnLeave(mine);
+  const offA=db.onAdd(mine,jid=>{if(stop||!/^[a-z0-9]{6,30}$/.test(jid))return;const old=links.get(jid);if(old){links.delete(jid);old._gone();}
+    const base=mine+'/'+jid;let c=null;c=fbConn(base,'u','d',()=>{if(links.get(jid)===c)links.delete(jid);db.remove(base);});links.set(jid,c);accept(c);});
+  const offR=db.onRemove(mine,jid=>{const c=links.get(jid);if(c){links.delete(jid);c._gone();}});
+  netLog('Backup relay: room '+room.toUpperCase()+' is listed');
+  return ()=>{stop=true;offA();offR();for(const c of links.values())c.close();
+    db.get(root+'/h').then(h=>{if(h===me)db.remove(root+'/h');}).catch(()=>{});setTimeout(()=>db.remove(mine),500);};}
+/* player: knock on the host's door. target is 'ttkp-<host id>' when we know the host, or 'ttk-<room>' for the room's listed host */
+async function fbDial(room,me,target,cancelled){
+  if(!(await fbReady()))throw {code:'unavailable'};const db=FBR.db,root='r/'+room;
+  let hid=String(target||'').indexOf('ttkp-')===0?String(target).slice(5):null;
+  if(!hid){hid=await db.get(root+'/h');if(!hid||typeof hid!=='string')throw {code:'not_found'};}
+  if(cancelled())throw {code:'cancel'};
+  const key=me+nrid(4),base=root+'/x/'+hid+'/'+key; /* a fresh folder per attempt, so cleanup of an old link never hits a new one */
+  db.dropOnLeave(base);await db.set(base+'/o',1);
+  let offR=null;const c=fbConn(base,'d','u',()=>{if(offR)offR();db.remove(base);});
+  offR=db.onRemove(root+'/x/'+hid,k=>{if(k===key)c._gone();});
+  netLog('Knocking through the backup relay');
+  return c;}
 function p2pApi(){
   if(typeof RTCPeerConnection==='undefined')return null;
   return {name:'p2p',join:(name,create)=>p2pRoom(String(name).replace(/^tt-/,'').toLowerCase().replace(/[^a-z0-9]/g,''),create)};
@@ -5097,17 +5151,20 @@ async function p2pRoom(room,create){
     dc.on('error',()=>fin(rej,{code:'blocked'}));});
   /* try every matchmaking route at once; the first channel that opens wins and says hello */
   const connectHost=async(pjTarget,quick)=>{
-    const lock={won:false};const errsSeen=[];
+    const lock={won:false};const errsSeen=[],dfail={n:0};
     const attempt=async(kind)=>{
       let c;
       if(kind==='pj')c=await dialPJ(pjTarget,lock);
-      else{if(!(await sigAvailable()))throw {code:'unavailable'};
+      else if(kind==='sig'){if(!(await sigAvailable()))throw {code:'unavailable'};
         if(st.peer&&!st.peer.destroyed){for(let i=0;i<(quick?10:25)&&!lock.won;i++)await nsleep(100);}
         if(lock.won)throw {code:'cancel'};c=await sigDial(room,me,()=>lock.won);}
+      else if(kind==='fb'){const t0=performance.now(),wait=quick?1500:4000;
+        while(!lock.won&&performance.now()-t0<wait&&dfail.n<2)await nsleep(100);
+        if(lock.won)throw {code:'cancel'};c=await fbDial(room,me,pjTarget,()=>lock.won);}
       if(lock.won){c.close();throw {code:'cancel'};}
       lock.won=true;
       try{const w=await helloTo(c);return {c,w};}catch(e){lock.won=false;throw e;}};
-    const tries=['pj','sig'].map(k=>attempt(k).catch(e=>{errsSeen.push(e&&e.code||'error');throw e;}));
+    const tries=['pj','sig','fb'].map(k=>attempt(k).catch(e=>{errsSeen.push(e&&e.code||'error');if(k!=='fb')dfail.n++;throw e;}));
     let tmr;const limit=new Promise((_,rej)=>{tmr=setTimeout(()=>{if(!lock.won){lock.won=true;errsSeen.push('timeout');}rej({code:'timeout'});},quick?6500:40000);});
     try{const r=await Promise.race([Promise.any(tries),limit]);clearTimeout(tmr);return r;}
     catch(e){clearTimeout(tmr);const has=c=>errsSeen.includes(c);if(has('not_host'))throw {code:'not_host'};throw {code:has('full')?'full':has('blocked')||has('timeout')?'blocked':has('not_found')?'not_found':'upstream_error'};}
@@ -5123,6 +5180,7 @@ async function p2pRoom(room,create){
     for(const p of w.peers||[]){if(p.peer===me)continue;seen.add(p.peer);addPeer(p.peer,p.presence||{});}
     for(const id of [...table.keys()])if(!seen.has(id))dropLocal(id);
     c.onmsg=onHostMsg;c.onclose=()=>{if(st.hostConn!==c||st.dead)return;st.hostConn=null;hostLost();};
+    c.send({t:'p',p:Object.assign({},table.get(me))}); /* anything we changed while the hello was in flight */
     netLog('Connected to the host ('+c.via+')');kick();};
   /* ---------- host migration ---------- */
   const elect=skip=>{let b=null;for(const [id,pr] of table){if(skip.has(id))continue;const t=+pr.t0||1e15;if(!b||t<b.t||(t===b.t&&id<b.id))b={t,id};}return b&&b.id;};
@@ -5130,8 +5188,10 @@ async function p2pRoom(room,create){
     st.role='host';st.hostId=me;st.hostConn=null;netLog('You are the host now');status('host');
     for(const id of table.keys())if(id!==me&&!conns.has(id))rejoin.set(id,setTimeout(()=>{rejoin.delete(id);if(!conns.has(id))dropPeer(id);},30000));
     if(st.peer)claimAlias(false);
+    fbHostStart();
     if(await sigAvailable()){try{await sigCall({op:'host',room,id:me,prev});}catch(e){}if(!st.dead&&st.role==='host')st.stopSig=sigHostLoop(room,me,accept,()=>busy(),()=>{});}
   };
+  const fbHostStart=()=>fbReady().then(ok=>{if(ok&&!st.dead&&st.role==='host'&&!st.stopFb)st.stopFb=fbHostLoop(room,me,accept);});
   const busy=()=>{for(const p of table.values())if(p.ph==='race')return true;return conns.size>=11;};
   const hostLost=async()=>{
     if(st.migrating||st.dead)return;st.migrating=true;const old=st.hostId,bye=st.byeFrom===old;
@@ -5152,6 +5212,7 @@ async function p2pRoom(room,create){
     }finally{st.migrating=false;}
   };
   /* ---------- start ---------- */
+  const fbP=fbReady();
   const [p0]=await Promise.all([openPeer('ttkp-'+me),sigAvailable()]);
   if(p0&&p0!=='taken'){setPeer(p0);netLog('PeerJS matchmaking: online');}else netLog(pjOk?'PeerJS matchmaking: not reachable':'PeerJS library did not load');
   const R={name:'p2p',
@@ -5166,23 +5227,27 @@ async function p2pRoom(room,create){
         if(now&&navigator.sendBeacon)navigator.sendBeacon(SIG.url,new Blob([body],{type:'text/plain'}));else sigCall({op:'close',room,id:me},3000).catch(()=>{});}}
       else if(st.hostConn)st.hostConn.send({t:'bye'});
       st.dead=true;netLog('Left the room');
-      (now?f=>f():f=>setTimeout(f,150))(()=>{for(const c of conns.values())c.close();if(st.hostConn)st.hostConn.close();if(st.stopSig)st.stopSig();
+      (now?f=>f():f=>setTimeout(f,150))(()=>{for(const c of conns.values())c.close();if(st.hostConn)st.hostConn.close();if(st.stopSig)st.stopSig();if(st.stopFb)st.stopFb();
         for(const t of rejoin.values())clearTimeout(t);for(const f of cleanups)f();
         try{if(st.alias)st.alias.destroy();}catch(e){}try{if(st.peer)st.peer.destroy();}catch(e){}},150);}};
-  const abort=e=>{st.dead=true;for(const f of cleanups)f();if(st.stopSig)st.stopSig();try{if(st.alias)st.alias.destroy();}catch(x){}try{if(st.peer)st.peer.destroy();}catch(x){}throw e;};
-  const anyRoute=st.peer||SIG.ok;
+  const abort=e=>{st.dead=true;for(const f of cleanups)f();if(st.stopSig)st.stopSig();if(st.stopFb)st.stopFb();try{if(st.alias)st.alias.destroy();}catch(x){}try{if(st.peer)st.peer.destroy();}catch(x){}throw e;};
+  if(!st.peer&&!SIG.ok)await fbP;
+  const anyRoute=st.peer||SIG.ok||FBR.ok;
   if(!anyRoute)abort({code:'upstream_error',message:'no matchmaking reachable'});
   if(create){
     st.role='host';st.hostId=me;
     let pj=null,sg=null;
     if(st.peer){pj=await claimAlias(true);if(pj==='taken')abort({code:'exists'});}
     if(SIG.ok){try{const r=await sigCall({op:'host',room,id:me});sg=r.ok?'ok':r.code;}catch(e){sg='down';}if(sg==='exists')abort({code:'exists'});}
-    if(pj!=='ok'&&sg!=='ok')abort({code:'upstream_error',message:'no matchmaking reachable'});
+    let fbx=null;if(FBR.ok){try{fbx=await FBR.db.get('r/'+room+'/h');}catch(e){}if(fbx&&pj!=='ok'&&sg!=='ok')abort({code:'exists'});}
+    if(pj!=='ok'&&sg!=='ok'&&!FBR.ok)abort({code:'upstream_error',message:'no matchmaking reachable'});
     if(sg==='ok')st.stopSig=sigHostLoop(room,me,accept,()=>busy(),()=>{});
-    netLog('Room '+room.toUpperCase()+' is open'+(pj==='ok'&&sg==='ok'?' (both matchmaking services)':pj==='ok'?' (PeerJS only)':' (site matchmaking only)'));
+    fbHostStart();
+    netLog('Room '+room.toUpperCase()+' is open'+(pj==='ok'&&sg==='ok'?' (both matchmaking services)':pj==='ok'?' (PeerJS only)':sg==='ok'?' (site matchmaking only)':' (backup relay only)'));
   }else{
     netLog('Looking for room '+room.toUpperCase()+'…');
-    try{adoptHost(await connectHost('ttk-'+room,false));}catch(e){abort(e);}
+    try{adoptHost(await connectHost('ttk-'+room,false));}
+    catch(e){if((e.code==='blocked'||e.code==='timeout')&&FBR.ok&&!st.dead){netLog('Trying once more…');try{adoptHost(await connectHost('ttk-'+room,false));}catch(e2){abort(e2);}}else abort(e);}
   }
   return R;
 }
@@ -8449,7 +8514,7 @@ async function boot(){
     buildMap(SET.map);buildMenu();setupComposer();applyQuality();resize();setMuted(SET.muted);try{if(showScene)renderer.compile(showScene,camera);}catch(e){}
     startDemo();$('title').hidden=false;$('loading').hidden=true;setTimeout(()=>{try{artIdle();}catch(e){}},4000);setTimeout(prewarmKarts,2500);try{sessionStorage.removeItem('ttk-gl-retry');}catch(e){}
     requestAnimationFrame(frame);
-    window.__gk={get RAMPS(){return RAMPS;},get PADS(){return PADS;},leaveTitle,pickMode,backToModes,GP,SHOTS,locate,coins:()=>coins,sim:n=>{for(let i=0;i<n;i++){S.t+=1/30;animateWorld(1/30);simulate(1/30);}},S,karts:()=>karts,player:()=>player,startRace,beginCountdown,input,SET,get N(){return N;},get GAP_A(){return GAP_A;},get GAP_B(){return GAP_B;},get C(){return C;},buildMap,selRacer,aerial,MAPS,shotCam,grab,scene,placeSun,clearRace,placeKart,updateKartVisuals,straightest,gridSlot,camera,setPlayer:k=>{player=k;},get NET(){return NET;},onlineArt,get world(){return world;},get THREE(){return THREE;},get COLL(){return COLL;},get S3(){return S3;},s3Frame,s3Lock,s3Sim:(n,f)=>{for(let i=0;i<n;i++){S.t+=1/30;if(f)f();s3Frame(1/30);}},s3Start,s3Launch,s3BossStart,s3EndStart,s3BuildHighway,s3Respawn,s3Hurt,s3Spawn,s3Results,s3W,s3H,s3Chunks,get MUS(){return MUS;},STORY,STAGES,openStory,loadSlot,storyStartRace,briefNext,playCine,storyExitRace,showHub,storyResults,greenTerrain,spawnTufts,get TERRAIN(){return TERRAIN;},get MAP(){return MAP;},hitKart,finishKart,get FD(){return FD;},fdStart,fdSim:(n,dt)=>{dt=dt||1/30;const t0=performance.now();for(let i=0;i<n;i++){S.t+=dt;fdFrame(dt,dt);}return performance.now()-t0;},fdBench:(lvl,n)=>{const out=[];for(let i=0;i<n;i++){const t0=performance.now();const ch=fdBuildChunk(Math.floor(player.x/128)+i-2,Math.floor(player.z/128)+3,lvl);out.push(+(performance.now()-t0).toFixed(1));fdFree(ch.g);}return out;},get FDA(){return FDA;}};
+    window.__gk={get RAMPS(){return RAMPS;},get PADS(){return PADS;},leaveTitle,pickMode,backToModes,GP,SHOTS,locate,coins:()=>coins,sim:n=>{for(let i=0;i<n;i++){S.t+=1/30;animateWorld(1/30);simulate(1/30);}},S,karts:()=>karts,player:()=>player,startRace,beginCountdown,input,SET,get N(){return N;},get GAP_A(){return GAP_A;},get GAP_B(){return GAP_B;},get C(){return C;},buildMap,selRacer,aerial,MAPS,shotCam,grab,scene,placeSun,clearRace,placeKart,updateKartVisuals,straightest,gridSlot,camera,setPlayer:k=>{player=k;},get NET(){return NET;},onlineArt,get world(){return world;},get THREE(){return THREE;},get COLL(){return COLL;},get S3(){return S3;},s3Frame,s3Lock,s3Sim:(n,f)=>{for(let i=0;i<n;i++){S.t+=1/30;if(f)f();s3Frame(1/30);}},s3Start,s3Launch,s3BossStart,s3EndStart,s3BuildHighway,s3Respawn,s3Hurt,s3Spawn,s3Results,s3W,s3H,s3Chunks,get MUS(){return MUS;},STORY,STAGES,openStory,loadSlot,storyStartRace,briefNext,playCine,storyExitRace,showHub,storyResults,greenTerrain,spawnTufts,get TERRAIN(){return TERRAIN;},get MAP(){return MAP;},hitKart,finishKart,get FD(){return FD;},fdStart,p2pApi,get FBR(){return FBR;},fdSim:(n,dt)=>{dt=dt||1/30;const t0=performance.now();for(let i=0;i<n;i++){S.t+=dt;fdFrame(dt,dt);}return performance.now()-t0;},fdBench:(lvl,n)=>{const out=[];for(let i=0;i<n;i++){const t0=performance.now();const ch=fdBuildChunk(Math.floor(player.x/128)+i-2,Math.floor(player.z/128)+3,lvl);out.push(+(performance.now()-t0).toFixed(1));fdFree(ch.g);}return out;},get FDA(){return FDA;}};
   }catch(err){console.error(err);const msg=String(err&&err.message||err),gl=GL_LOST||/webgl|shader|context/i.test(msg);
     let n=0;try{n=+sessionStorage.getItem('ttk-gl-retry')||0;}catch(e){}
     if(gl&&n<2){try{sessionStorage.setItem('ttk-gl-retry',n+1);}catch(e){}$('loading').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;max-width:640px"><span>Graphics hiccup, restarting…</span></div>';setTimeout(()=>location.reload(),900);return;}
