@@ -348,6 +348,8 @@ body.touch #speedo{right:auto;left:50%;transform:translateX(-50%);bottom:calc(va
 body.touch .fdkeys{display:none}
 body.free #timer,body.free #tower,body.free #rank,body.free #bottomL,body.free #itemSlot,body.free #warn{display:none!important}
 body.free #speedo{display:block!important}
+body.free #touch #tI{display:none!important}
+.fdopts .row{margin-top:2px}
 #fdHud{position:absolute;left:calc(var(--u)*2);top:calc(var(--u)*2 + env(safe-area-inset-top,0px));pointer-events:none}
 #fdHud[hidden]{display:none}
 .fdcard{display:flex;flex-direction:column;gap:3px;padding:10px 14px;border:3px solid #17142e;border-radius:12px;background:rgba(255,250,240,.94);color:#17142e;box-shadow:4px 5px 0 #17142e;min-width:170px}
@@ -794,6 +796,8 @@ body.touch #sHearts{top:calc(var(--u)*6 + env(safe-area-inset-top,0px))}
       <div id="fdBig"><img id="fdImg" alt=""><div class="mbcap"><b id="fdName"></b><span id="fdSub"></span></div></div>
       <h2>Scenery</h2><div class="seg wrap" id="fdBioSeg" role="radiogroup" aria-label="Scenery"></div>
       <h2>Time of day</h2><div class="seg" id="fdTimeSeg" role="radiogroup" aria-label="Time of day"></div>
+      <div class="row"><div><h2>Top speed</h2><div class="seg" id="fdFastSeg" role="radiogroup" aria-label="Top speed"></div></div><div><h2>Auto forward</h2><div class="seg" id="fdGasSeg" role="radiogroup" aria-label="Auto forward"></div></div></div>
+      <p class="fdnote" id="fdFastNote"></p>
       <p class="fdnote">The road never ends and is different every time. Drive off it whenever you like.<span class="fdkeys"><kbd>T</kbd> auto-drive <kbd>V</kbd> cinematic camera <kbd>R</kbd> back to road <kbd>H</kbd> hide HUD <kbd>Space</kbd> honk</span></p>
     </div>
     <h2 id="mapH">Choose a track</h2>
@@ -2342,7 +2346,7 @@ let SET;try{SET=Object.assign({},DEF,JSON.parse(store.get('tungtungkart1')||'{}'
 if(!store.get('tt_main_v1')){SET.racer=0;store.set('tt_main_v1','1');} /* Tung Tung is the featured, first-selected racer */
 var STORY_OVR=null;const saveSet=()=>store.set('tungtungkart1',JSON.stringify(STORY_OVR?Object.assign({},SET,STORY_OVR):SET));
 const CC={50:{top:28,acc:21},100:{top:34,acc:24},150:{top:40,acc:27},200:{top:47,acc:31}};
-const cc=()=>CC[SET.cc]||CC[150];
+const cc=()=>(FD&&FD.on&&FD.cc)||CC[SET.cc]||CC[150];
 const CPU={easy:{cap:.86,drift:.2,iq:.45,rocket:.15},normal:{cap:.95,drift:.55,iq:.75,rocket:.35},hard:{cap:1.01,drift:.9,iq:1,rocket:.6}};
 const IS_TOUCH=(()=>{try{const ua=navigator.userAgent||'',uad=navigator.userAgentData;
   if(uad&&typeof uad.mobile==='boolean'&&uad.mobile)return true;
@@ -4571,7 +4575,7 @@ function pollPad(){
 function playerControl(k){
   let steer=(input.right?1:0)-(input.left?1:0);if(Math.abs(pad.steer)>.15)steer=pad.steer;
   const brake=input.brake||pad.brake;
-  const gas=(input.gas||pad.gas||((SET.auto||IS_TOUCH)&&!STORY.on&&!brake))?1:0;
+  const gas=(input.gas||pad.gas||((FD&&FD.on?fdAutoGas():(SET.auto||IS_TOUCH))&&!STORY.on&&!brake))?1:0;
   if(SET.smart&&!k.air&&!k.fly&&!k.roam){const lim=HALF-1.2,l=k.lat;if(l>lim&&steer>-.5)steer=Math.min(steer,-.6*clamp((l-lim)/2,0,1));if(l<-lim&&steer<.5)steer=Math.max(steer,.6*clamp((-lim-l)/2,0,1));}
   return {steer,gas,brake:brake?1:0,drift:input.drift||pad.drift};
 }
@@ -4698,7 +4702,7 @@ function buildTower(){const t=$('tower');t.innerHTML='';towerRows.length=0;for(l
 function updateTower(){const sorted=rankAll();sorted.forEach((k,i)=>{const d=towerRows[i];if(!d)return;const key=k.rIdx;if(d._k!==key){d._k=key;d.querySelector('b').textContent=i+1;d.querySelector('i').style.background=hex(k.rc.color);d.querySelector('span').textContent=k.rc.name.split(' ')[0];}d.classList.toggle('me',k===player);});}
 const spCtx=$('speedo').getContext('2d');let spShown=-1;
 function drawSpeedo(k){const kmh=Math.round(Math.abs(k.speed)*3.6);if(kmh===spShown&&!(k.boostT>0))return;spShown=kmh;
-  const g=spCtx,W=220,c=W/2,r=88,a0=Math.PI*.75,a1=Math.PI*2.25,f=clamp(kmh/220,0,1);g.clearRect(0,0,W,W);
+  const g=spCtx,W=220,c=W/2,r=88,a0=Math.PI*.75,a1=Math.PI*2.25,f=clamp(kmh/(FD&&FD.on&&FD.cc?420:220),0,1);g.clearRect(0,0,W,W);
   g.beginPath();g.arc(c,c,r+14,0,7);g.fillStyle='rgba(12,10,40,.62)';g.fill();
   g.lineCap='round';g.lineWidth=14;g.strokeStyle='rgba(255,255,255,.14)';g.beginPath();g.arc(c,c,r,a0,a1);g.stroke();
   const gr=g.createLinearGradient(20,0,200,0);if(k.ghostT>0){gr.addColorStop(0,'#9dff3a');gr.addColorStop(1,'#7b4dff');}else{gr.addColorStop(0,'#3ee0ff');gr.addColorStop(.6,'#9dff3a');gr.addColorStop(1,k.boostT>0?'#ff7a1a':'#ffd23f');}
@@ -7952,8 +7956,10 @@ const FD_TIME={
   noon:{sky:'day',skyP:{el:52,az:160,fog:[0xbcd6ee,260,1050]},cloud:[1,1,1],ring:0x8fa6c2},
   sunset:{sky:'dusk',skyP:{el:6,az:250,fog:[0xeab58a,220,1050]},cloud:[1,.72,.58],ring:0x9a7a8a},
   night:{sky:'night',skyP:{fog:[0x0e1338,110,720]},cloud:[.1,.11,.2],ring:0x141a3c}};
-let FDOPT;try{FDOPT=Object.assign({bio:'mixed',time:'noon'},JSON.parse(store.get('tungtung-free')||'{}'));}catch(e){FDOPT={bio:'mixed',time:'noon'};}
+let FDOPT;try{FDOPT=Object.assign({bio:'mixed',time:'noon',fast:'off',gas:''},JSON.parse(store.get('tungtung-free')||'{}'));}catch(e){FDOPT={bio:'mixed',time:'noon',fast:'off',gas:''};}
 if(!FD_TIME[FDOPT.time])FDOPT.time='noon';if(FD_BIO_IDS.indexOf(FDOPT.bio)<0)FDOPT.bio='mixed';
+function fdAutoGas(){return FDOPT.gas?FDOPT.gas==='on':(SET.auto||IS_TOUCH);}
+const FD_FAST={top:115,acc:30};
 function fdSaveOpt(){store.set('tungtung-free',JSON.stringify(FDOPT));}
 SONGS.cruise={tempo:84,wave:'triangle',soft:true,bass:[43,0,50,0,47,0,50,0, 40,0,47,0,43,0,47,0, 36,0,43,0,40,0,43,0, 38,0,45,0,42,0,45,0],
   lead:[71,0,0,74,0,0,79,0, 78,0,76,0,74,0,0,0, 72,0,0,76,0,0,79,0, 76,0,0,0,0,0,0,0, 74,0,0,78,0,0,81,0, 79,0,78,0,76,0,74,0, 71,0,72,0,74,0,0,0, 67,0,0,0,0,0,0,0]};
@@ -8310,7 +8316,7 @@ function fdStart(){stopMusic();initAudio();
     const G=new THREE.Group();world.add(G);const seed=(Math.random()*4294967295)>>>0,o=fdOpts();
     FD={on:true,G,seed,rand:rng(seed),sx:(rng(seed^7)()-.5)*90000,sz:(rng(seed^13)()-.5)*90000,fix:FDOPT.bio==='mixed'?-1:FD_BIO_IDS.indexOf(FDOPT.bio)-1,
       chunks:new Map(),pieces:new Map(),pieceJobs:new Set(),jobs:[],want:null,pk:'',NR:o.NR,FR:o.FR,segN:o.segN,segF:o.segF,farTrees:o.far,
-      dist:0,auto:false,cine:{on:false,t:0,pos:new V3(),look:new V3()},bio:-1,bioT:0,toastT:0,lastD:1e9,hud:true};
+      dist:0,auto:false,cc:FDOPT.fast==='on'?FD_FAST:null,cine:{on:false,t:0,pos:new V3(),look:new V3()},bio:-1,bioT:0,toastT:0,lastD:1e9,hud:true};
     fdAssets();fdRoadInit();fdGrowTo(1400);
     /* a fake one-point track so the shared kart code has something to point at */
     const i0=Math.round(FDK.BACK/FDK.DS),h0=FD.rh[i0];C=[new V3(FD.rx[i0],FD.ry[i0],FD.rz[i0])];T=[new V3(Math.sin(h0),0,Math.cos(h0))];R=[new V3(-T[0].z,0,T[0].x)];N=1;SEG=[2];ELEV=[false];GAP=[false];EDGE=[99];CURV=[0];TURN=[0];RL=[0];GAP_A=GAP_B=-1;MCX=C[0].x;MCZ=C[0].z;GS=[];ES=[];
@@ -8416,10 +8422,13 @@ function fdArtURL(bio,time,W,H){const k=bio+time+W;if(!FD_ART[k]){const c=docume
 function fdMenuInit(){$('artFree').src=fdArtURL('mixed','sunset',640,820);
   const mk=(id,vals,labels,key)=>{const el=$(id);el.innerHTML='';vals.forEach((v,i)=>{const b=document.createElement('button');b.setAttribute('role','radio');b.dataset.v=v;b.textContent=labels[i];el.appendChild(b);});
     el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;FDOPT[key]=b.dataset.v;fdSaveOpt();fdSyncMenu();});};
-  mk('fdBioSeg',FD_BIO_IDS,['Mixed','Meadow','Forest','Autumn','Desert','Snow'],'bio');mk('fdTimeSeg',['morning','noon','sunset','night'],['Morning','Noon','Sunset','Night'],'time');}
+  mk('fdBioSeg',FD_BIO_IDS,['Mixed','Meadow','Forest','Autumn','Desert','Snow'],'bio');mk('fdTimeSeg',['morning','noon','sunset','night'],['Morning','Noon','Sunset','Night'],'time');
+  mk('fdFastSeg',['off','on'],['Normal','Unlocked'],'fast');mk('fdGasSeg',['on','off'],['On','Off'],'gas');}
 function fdSyncMenu(){const on=MODE==='free';$('menu').classList.toggle('free',on);if(!on)return;
   $('crumbT').textContent='Free Drive';$('go').textContent='Start driving';
-  for(const [id,key] of[['fdBioSeg','bio'],['fdTimeSeg','time']])[...$(id).children].forEach(b=>b.setAttribute('aria-checked',b.dataset.v===FDOPT[key]));
+  const cur={bio:FDOPT.bio,time:FDOPT.time,fast:FDOPT.fast,gas:fdAutoGas()?'on':'off'};
+  for(const [id,key] of[['fdBioSeg','bio'],['fdTimeSeg','time'],['fdFastSeg','fast'],['fdGasSeg','gas']])[...$(id).children].forEach(b=>b.setAttribute('aria-checked',b.dataset.v===cur[key]));
+  $('fdFastNote').textContent=FDOPT.fast==='on'?'No speed limit: up to about 400 km/h, so brake into the bends.':'Normal top speed for your engine class.';
   $('fdImg').src=fdArtURL(FDOPT.bio,FDOPT.time,640,400);
   const nm={mixed:'Every biome, one road',meadow:'Green Meadows',forest:'Pine Forest',autumn:'Maple Hills',desert:'Red Rock Desert',snow:'Frozen Peaks'}[FDOPT.bio];$('fdName').textContent=nm;
   $('fdSub').textContent={morning:'Early light, long shadows',noon:'Blue skies, clear views',sunset:'Golden hour, warm skies',night:'Stars out, headlights on'}[FDOPT.time];}

@@ -45,6 +45,8 @@ rep('''    <h2 id="mapH">Choose a track</h2>''','''    <div class="fdopts">
       <div id="fdBig"><img id="fdImg" alt=""><div class="mbcap"><b id="fdName"></b><span id="fdSub"></span></div></div>
       <h2>Scenery</h2><div class="seg wrap" id="fdBioSeg" role="radiogroup" aria-label="Scenery"></div>
       <h2>Time of day</h2><div class="seg" id="fdTimeSeg" role="radiogroup" aria-label="Time of day"></div>
+      <div class="row"><div><h2>Top speed</h2><div class="seg" id="fdFastSeg" role="radiogroup" aria-label="Top speed"></div></div><div><h2>Auto forward</h2><div class="seg" id="fdGasSeg" role="radiogroup" aria-label="Auto forward"></div></div></div>
+      <p class="fdnote" id="fdFastNote"></p>
       <p class="fdnote">The road never ends and is different every time. Drive off it whenever you like.<span class="fdkeys"><kbd>T</kbd> auto-drive <kbd>V</kbd> cinematic camera <kbd>R</kbd> back to road <kbd>H</kbd> hide HUD <kbd>Space</kbd> honk</span></p>
     </div>
     <h2 id="mapH">Choose a track</h2>''')
@@ -53,6 +55,9 @@ rep('''  <div id="rank"></div>''','''  <div id="rank"></div>
   <div id="fdHud" hidden><div class="fdcard"><small>Free Drive</small><b id="fdBio">On the road</b><span><i id="fdOdo">0.0 km</i><em id="fdAuto">AUTO</em></span></div><div id="fdToast"></div></div>''')
 rep("if(j&&j.ok&&Array.isArray(j.iceServers)&&j.iceServers.length){window.TT_PEER_CFG=","if(j&&j.ok&&Array.isArray(j.iceServers)&&j.iceServers.length){RELAY.via=j.via;window.TT_PEER_CFG=")
 rep("if(ok)netLog('Relay: Cloudflare ready');","if(ok)netLog('Relay: ready ('+(RELAY.via||'relay')+')');")
+rep("const cc=()=>CC[SET.cc]||CC[150];","const cc=()=>(FD&&FD.on&&FD.cc)||CC[SET.cc]||CC[150];")
+rep("const gas=(input.gas||pad.gas||((SET.auto||IS_TOUCH)&&!STORY.on&&!brake))?1:0;","const gas=(input.gas||pad.gas||((FD&&FD.on?fdAutoGas():(SET.auto||IS_TOUCH))&&!STORY.on&&!brake))?1:0;")
+rep("f=clamp(kmh/220,0,1);","f=clamp(kmh/(FD&&FD.on&&FD.cc?420:220),0,1);")
 # CSS
 css='''
 /* free drive */
@@ -85,6 +90,8 @@ css='''
 body.touch .fdkeys{display:none}
 body.free #timer,body.free #tower,body.free #rank,body.free #bottomL,body.free #itemSlot,body.free #warn{display:none!important}
 body.free #speedo{display:block!important}
+body.free #touch #tI{display:none!important}
+.fdopts .row{margin-top:2px}
 #fdHud{position:absolute;left:calc(var(--u)*2);top:calc(var(--u)*2 + env(safe-area-inset-top,0px));pointer-events:none}
 #fdHud[hidden]{display:none}
 .fdcard{display:flex;flex-direction:column;gap:3px;padding:10px 14px;border:3px solid #17142e;border-radius:12px;background:rgba(255,250,240,.94);color:#17142e;box-shadow:4px 5px 0 #17142e;min-width:170px}
