@@ -4883,6 +4883,18 @@ function sigAvailable(){
   return SIG.probe=(async()=>{let ok=false;
     if(/^https?:$/.test(location.protocol)){try{const ac=new AbortController(),t=setTimeout(()=>ac.abort(),6000);const r=await fetch(SIG.url,{cache:'no-store',signal:ac.signal});clearTimeout(t);const j=await r.json();ok=!!(j&&j.ok&&j.v);}catch(e){ok=false;}}
     SIG.ok=ok;netLog('Site matchmaking: '+(ok?'online':'not available here'));return ok;})();}
+/* Cloudflare relay (TURN): lets players on strict networks (school Wi-Fi etc.) connect. Passes come from the
+   site's /.netlify/functions/turn so the Cloudflare key never ships in the game. */
+const RELAY={url:window.TT_TURN_URL||'/.netlify/functions/turn',ok:false,at:0,p:null};
+function loadTurn(){
+  if(RELAY.ok&&Date.now()-RELAY.at<3*3600e3)return Promise.resolve(true);
+  if(RELAY.p)return RELAY.p;
+  return RELAY.p=(async()=>{let ok=false;
+    if(/^https?:$/.test(location.protocol)){try{const ac=new AbortController(),t=setTimeout(()=>ac.abort(),6000);const r=await fetch(RELAY.url,{cache:'no-store',signal:ac.signal});clearTimeout(t);const j=await r.json();
+      if(j&&j.ok&&Array.isArray(j.iceServers)&&j.iceServers.length){window.TT_PEER_CFG={config:{iceServers:j.iceServers.concat([{urls:'stun:stun.l.google.com:19302'}])}};ok=true;}
+      else netLog('Relay: '+((j&&j.code)==='not_configured'?'not set up on this site yet':'unavailable ('+((j&&j.code)||r.status)+')'));}catch(e){netLog('Relay: unavailable');}}
+    RELAY.ok=ok;RELAY.at=Date.now();RELAY.p=null;if(ok)netLog('Relay: Cloudflare ready');return ok;})();}
+const iceWait=()=>RELAY.ok?6000:2500;
 function netIce(){const c=window.TT_PEER_CFG;if(c&&c.config&&c.config.iceServers)return c.config.iceServers;
   try{const d=window.peerjs&&window.peerjs.util&&window.peerjs.util.defaultConfig;if(d&&d.iceServers)return d.iceServers;}catch(e){}
   return [{urls:'stun:stun.l.google.com:19302'},{urls:'stun:global.stun.twilio.com:3478'}];}
@@ -4903,9 +4915,9 @@ function iceDone(pc,ms){return new Promise(r=>{if(pc.iceGatheringState==='comple
   pc.addEventListener('icegatheringstatechange',()=>{if(pc.iceGatheringState==='complete'){clearTimeout(t);r();}});});}
 /* joiner side of site matchmaking: post a WebRTC offer, wait for the host's answer, open a data channel */
 async function sigDial(room,me,cancelled){
-  const n=nrid(8),pc=new RTCPeerConnection({iceServers:netIce()}),ch=pc.createDataChannel('ttk',{ordered:true});
+  await loadTurn();const n=nrid(8),pc=new RTCPeerConnection({iceServers:netIce()}),ch=pc.createDataChannel('ttk',{ordered:true});
   try{
-    await pc.setLocalDescription(await pc.createOffer());await iceDone(pc,2500);
+    await pc.setLocalDescription(await pc.createOffer());await iceDone(pc,iceWait());
     if(cancelled())throw {code:'cancel'};
     const r=await sigCall({op:'offer',room,id:me,n,sdp:pc.localDescription.sdp});
     if(!r.ok)throw {code:r.code==='not_found'?'not_found':'upstream_error'};
@@ -4924,10 +4936,10 @@ async function sigDial(room,me,cancelled){
 /* host side of site matchmaking: heartbeat the room and answer join requests */
 function sigHostLoop(room,me,accept,isBusy,onLost){
   let stop=false,timer=null,fails=0;const t0=performance.now();
-  const answer=async o=>{const pc=new RTCPeerConnection({iceServers:netIce()});let opened=false;
+  const answer=async o=>{await loadTurn();const pc=new RTCPeerConnection({iceServers:netIce()});let opened=false;
     pc.ondatachannel=e=>{const ch=e.channel,go=()=>{opened=true;if(!stop)accept(connRTC(pc,ch));else pc.close();};if(ch.readyState==='open')go();else ch.onopen=go;};
     setTimeout(()=>{if(!opened)try{pc.close();}catch(x){}},25000);
-    try{await pc.setRemoteDescription({type:'offer',sdp:o.sdp});await pc.setLocalDescription(await pc.createAnswer());await iceDone(pc,2500);
+    try{await pc.setRemoteDescription({type:'offer',sdp:o.sdp});await pc.setLocalDescription(await pc.createAnswer());await iceDone(pc,iceWait());
       const r=await sigCall({op:'answer',room,id:me,to:o.from,n:o.n,sdp:pc.localDescription.sdp});if(r.ok)netLog('Answered a join request (site matchmaking)');}
     catch(e){try{pc.close();}catch(x){}}};
   const tick=async()=>{if(stop)return;let r=null;
@@ -4995,7 +5007,7 @@ async function p2pRoom(room,create){
   const acceptPJ=dc=>{
     const go=()=>accept(connPJ(dc));if(dc.open)go();else{dc.on('open',go);setTimeout(()=>{if(!dc.open)try{dc.close();}catch(e){}},10000);}};
   /* ---------- PeerJS matchmaking ---------- */
-  const openPeer=id=>new Promise(res=>{if(!pjOk)return res(null);let p;try{p=cfg?new Peer(id,cfg):new Peer(id);}catch(e){return res(null);}
+  const openPeer=id=>new Promise(res=>{if(!pjOk)return res(null);let p;try{const pc2=window.TT_PEER_CFG||cfg;p=pc2?new Peer(id,pc2):new Peer(id);}catch(e){return res(null);}
     let done=false;const fin=v=>{if(done)return;done=true;res(v);};
     p.on('open',()=>fin(p));p.on('error',e=>{if(!done){fin(e&&e.type==='unavailable-id'?'taken':null);try{p.destroy();}catch(x){}}});
     setTimeout(()=>{if(!done){fin(null);try{p.destroy();}catch(x){}}},9000);});
@@ -5121,6 +5133,7 @@ async function netConnect(){
   return NET.api;
 }
 function openOnline(){
+  loadTurn();
   clearRace();titleRes(false);S.mode='menu';$('modes').hidden=true;S.sub=null;$('menu').hidden=true;$('online').hidden=false;startMusic('menu');
   $('olName').value=store.get('tungtung-nick')||'';
   if(NET.R)showLobby();else{$('olHome').hidden=false;$('olLobby').hidden=true;olMsg('');}
