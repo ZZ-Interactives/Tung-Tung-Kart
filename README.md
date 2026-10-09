@@ -8,12 +8,15 @@ Deploy: `netlify deploy --prod` from this folder (needs the function, so drag-an
 
 ## Online races on strict networks (school Wi-Fi)
 
-Online races connect players directly. Some networks block that, so the game can relay through Cloudflare TURN.
-`netlify/functions/turn.mjs` hands out short-lived relay passes; the Cloudflare key stays on Netlify.
+Online races connect players directly. Some networks block that, so the game can relay through a TURN server.
+`netlify/functions/turn.mjs` hands out the relay details; your key stays on Netlify, never in the game.
 
-Set two environment variables in Netlify (Site configuration > Environment variables), then redeploy:
+**Metered (free plan, no card):** sign up at dashboard.metered.ca, create an app, then in Netlify
+(Site configuration > Environment variables) add:
 
-- `CF_TURN_KEY_ID`: the TURN key ID (Cloudflare dashboard > Realtime > TURN Server > Create)
-- `CF_TURN_API_TOKEN`: that key's API token (shown once when the key is created)
+- `METERED_APP`: your app name, the `xxx` in `xxx.metered.live`
+- `METERED_API_KEY`: the TURN credential API key from the Metered dashboard
 
-In the online screen's connection log you should see "Relay: Cloudflare ready".
+(Cloudflare also works instead: `CF_TURN_KEY_ID` and `CF_TURN_API_TOKEN`.)
+
+Redeploy, then check the online screen's connection log for "Relay: ready".
