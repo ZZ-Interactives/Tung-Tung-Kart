@@ -319,8 +319,21 @@ body.touch #speedo{right:auto;left:50%;transform:translateX(-50%);bottom:calc(va
 @media (prefers-reduced-motion: reduce){.cta{transition:none}#banner.lap,#banner.big{animation:none}#warn{animation:none}}
 #tower,#speedo{display:none!important}
 /* free drive */
-.mcards.five .mcard{width:min(18vw,270px)}
-@media (max-width:860px){.mcards.five .mcard{width:min(42vw,260px)}}
+/* five mode cards always fit on one screen: sized by both width and height */
+.mcards.four.five{flex-direction:row;flex-wrap:nowrap;overflow:visible;gap:clamp(8px,1.6vw,26px);padding:clamp(8px,2vh,20px) clamp(10px,2vw,22px) clamp(54px,9vh,70px)}
+.mcards.four.five .mcard{flex:none;width:min(17.4vw,calc((100vh - 200px)*.78),270px);aspect-ratio:5/6.4}
+.mcards.four.five .mcard.sel{transform:translateY(-6px) scale(1.03)}
+.mcards.five .mcard .mlab{padding:clamp(6px,1.2vh,12px) clamp(8px,1vw,14px)}
+.mcards.five .mcard .mlab b{font-size:clamp(13px,1.85vw,26px)}
+.mcards.five .mcard .mlab small{font-size:clamp(9.5px,1vw,13px);margin-top:3px}
+.mcards.five .mcard .tag{left:clamp(6px,.8vw,12px);top:clamp(6px,.8vw,12px);padding:clamp(2px,.3vw,5px) clamp(5px,.7vw,10px);font-size:clamp(8.5px,.85vw,12px);border-width:2px}
+@media (max-height:520px){.mcards.four.five{padding-bottom:12px}.mcards.five .mcard .mlab small{display:none}}
+@media (max-width:760px) and (orientation:portrait){
+  .mcards.four.five{display:grid;grid-template-columns:1fr 1fr;align-content:center;gap:10px;padding:10px 14px 14px}
+  .mcards.four.five .mcard{width:auto;aspect-ratio:auto;height:calc((100svh - 130px)/3 - 7px);min-height:120px}
+  .mcards.four.five .mcard:last-child{grid-column:1/-1}
+  .mcards.five .mcard .mlab b{font-size:17px}.mcards.five .mcard .mlab small{font-size:11px}.mcards.five .mcard .tag{font-size:10px}
+}
 .mcard[data-mode="free"] .tag{background:#ff8a1a}
 .fdopts{display:none;flex-direction:column;gap:2px}
 #menu.free .fdopts{display:flex}
@@ -734,8 +747,8 @@ body.touch #sHearts{top:calc(var(--u)*6 + env(safe-area-inset-top,0px))}
   <div class="mcards four five" role="radiogroup" aria-label="Game mode">
     <button class="mcard" data-mode="gp" role="radio"><span class="art"><img id="artGp" alt=""></span><span class="tag">Cup</span><span class="mlab"><b>Grand Prix</b><small>5 races in a row. Most points takes the Tung Tung Cup.</small></span></button>
     <button class="mcard" data-mode="arcade" role="radio"><span class="art"><img id="artArc" alt=""></span><span class="tag">Quick race</span><span class="mlab"><b>Arcade</b><small>Pick any racer and any track, then go.</small></span></button>
-    <button class="mcard" data-mode="free" role="radio"><span class="art"><img id="artFree" alt=""></span><span class="tag">Chill</span><span class="mlab"><b>Free Drive</b><small>An endless road that builds itself. No timer, just cruise.</small></span></button>
     <button class="mcard" data-mode="online" role="radio"><span class="art"><img id="artOnline" alt=""></span><span class="tag">Multiplayer</span><span class="mlab"><b>Online Race</b><small>Make a room, share the code, race friends live.</small></span></button>
+    <button class="mcard" data-mode="free" role="radio"><span class="art"><img id="artFree" alt=""></span><span class="tag">Chill</span><span class="mlab"><b>Free Drive</b><small>An endless road that builds itself. No timer, just cruise.</small></span></button>
     <button class="mcard" data-mode="story" role="radio"><span class="art"><img id="artStory" alt=""></span><span class="tag">Story</span><span class="mlab"><b>Story Mode</b><small>Dry World GP. Win the water back from the AI that drank the rivers.</small></span></button>
   </div>
   <div class="hints"><span><kbd><i class="ar l"></i></kbd><kbd><i class="ar r"></i></kbd>Choose</span><span><kbd>Enter</kbd>OK</span><span><kbd>Backspace</kbd>Back</span><span><kbd>Esc</kbd>Settings</span></div>
@@ -4059,7 +4072,7 @@ function titleCamera(dt){
   camera.position.copy(titleCam.pos);camera.lookAt(titleCam.look);if(camera.fov!==55){camera.fov=55;camera.updateProjectionMatrix();updatePSScale();}
 }
 function titleRes(on){const pr=window.devicePixelRatio||1;if(on)renderer.setPixelRatio(Math.min(pr,1)*(QUAL==='low'?.7:.85));else applyQuality();if(composer){composer.setPixelRatio(renderer.getPixelRatio());composer.setSize(innerWidth,innerHeight);}updatePSScale();}
-const MODES=['gp','arcade','free','online','story'];let modeSel=1;
+const MODES=['gp','arcade','online','free','story'];let modeSel=1;
 function leaveTitle(){if(S.mode!=='title'||!$('esc').hidden||S.sub==='modes'||S.sub==='story')return;initAudio();showModes();stopMusic();startMusic('menu');}
 function showModes(){$('title').hidden=true;$('modes').hidden=false;S.sub='modes';modeSel=Math.max(0,MODES.indexOf(MODE));syncModes();}
 function syncModes(){document.querySelectorAll('.mcard').forEach((c,i)=>{c.classList.toggle('sel',i===modeSel);c.setAttribute('aria-checked',i===modeSel);});}
@@ -8383,7 +8396,7 @@ function fdArt(g,W,H,bio,time){const r=rng(bio.length*31+time.length*7+3),Tm={mo
   mtn(hy-H*.06,H*.03,tint(0x8a9ab8,.75),5);mtn(hy-H*.01,H*.025,tint(bio==='snow'?0xd0dcea:0x6a8a9a,.9),9);
   const c1=tint(B[0],1),c2=tint(B[1],1);g.fillStyle=c1;g.fillRect(0,hy,W,H-hy);mtn(hy+H*.04,H*.02,c2,13);g.fillStyle=c1;g.fillRect(0,hy+H*.1,W,H);
   /* winding road in perspective */
-  const P=t=>{const y=lerp(H*1.02,hy+H*.035,Math.pow(t,.55)),w=lerp(W*.46,W*.006,Math.pow(t,.55)),x=W*.5+Math.sin(t*5.2+.4)*W*.16*(1-t*.6)+(t>.5?Math.sin(t*9)*W*.03:0);return [x,y,w];};
+  const yb=H>W?H*.8:H*1.02,P=t=>{const y=lerp(yb,hy+H*.035,Math.pow(t,.55)),w=lerp(W*.46,W*.006,Math.pow(t,.55)),x=W*.5+Math.sin(t*5.2+.4)*W*.16*(1-t*.6)+(t>.5?Math.sin(t*9)*W*.03:0);return [x,y,w];};
   const L=[],Rr=[];for(let i=0;i<=60;i++){const [x,y,w]=P(i/60);L.push([x-w/2,y]);Rr.push([x+w/2,y]);}
   g.fillStyle=tint(0x8a7a5a,1);g.beginPath();L.forEach(([x,y],i)=>i?g.lineTo(x-(1-i/60)*W*.05,y):g.moveTo(x-W*.05,y));for(let i=60;i>=0;i--)g.lineTo(Rr[i][0]+(1-i/60)*W*.05,Rr[i][1]);g.fill();
   g.fillStyle=tint(0x4a4c52,1);g.beginPath();L.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));for(let i=60;i>=0;i--)g.lineTo(Rr[i][0],Rr[i][1]);g.fill();

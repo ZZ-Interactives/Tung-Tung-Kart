@@ -462,7 +462,7 @@ function fdArt(g,W,H,bio,time){const r=rng(bio.length*31+time.length*7+3),Tm={mo
   mtn(hy-H*.06,H*.03,tint(0x8a9ab8,.75),5);mtn(hy-H*.01,H*.025,tint(bio==='snow'?0xd0dcea:0x6a8a9a,.9),9);
   const c1=tint(B[0],1),c2=tint(B[1],1);g.fillStyle=c1;g.fillRect(0,hy,W,H-hy);mtn(hy+H*.04,H*.02,c2,13);g.fillStyle=c1;g.fillRect(0,hy+H*.1,W,H);
   /* winding road in perspective */
-  const P=t=>{const y=lerp(H*1.02,hy+H*.035,Math.pow(t,.55)),w=lerp(W*.46,W*.006,Math.pow(t,.55)),x=W*.5+Math.sin(t*5.2+.4)*W*.16*(1-t*.6)+(t>.5?Math.sin(t*9)*W*.03:0);return [x,y,w];};
+  const yb=H>W?H*.8:H*1.02,P=t=>{const y=lerp(yb,hy+H*.035,Math.pow(t,.55)),w=lerp(W*.46,W*.006,Math.pow(t,.55)),x=W*.5+Math.sin(t*5.2+.4)*W*.16*(1-t*.6)+(t>.5?Math.sin(t*9)*W*.03:0);return [x,y,w];};
   const L=[],Rr=[];for(let i=0;i<=60;i++){const [x,y,w]=P(i/60);L.push([x-w/2,y]);Rr.push([x+w/2,y]);}
   g.fillStyle=tint(0x8a7a5a,1);g.beginPath();L.forEach(([x,y],i)=>i?g.lineTo(x-(1-i/60)*W*.05,y):g.moveTo(x-W*.05,y));for(let i=60;i>=0;i--)g.lineTo(Rr[i][0]+(1-i/60)*W*.05,Rr[i][1]);g.fill();
   g.fillStyle=tint(0x4a4c52,1);g.beginPath();L.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));for(let i=60;i>=0;i--)g.lineTo(Rr[i][0],Rr[i][1]);g.fill();

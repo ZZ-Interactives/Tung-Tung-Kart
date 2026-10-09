@@ -30,16 +30,15 @@ rep("$('eRestart').onclick=()=>{stopMusic();closeEsc();startRace(true);};","$('e
 rep("$('go').onclick=()=>{initAudio();if(MODE==='gp')","$('go').onclick=()=>{initAudio();if(MODE==='free')return fdStart();if(MODE==='gp')")
 rep("function itemDown(){if(STORY.s3)","function itemDown(){if(FD&&FD.on){if(S.mode==='free')fdHorn();return;}if(STORY.s3)")
 rep("function itemUp(){if(STORY.s3)","function itemUp(){if(FD&&FD.on)return;if(STORY.s3)")
-rep("const MODES=['gp','arcade','online','story'];","const MODES=['gp','arcade','free','online','story'];")
+rep("const MODES=['gp','arcade','online','story'];","const MODES=['gp','arcade','online','free','story'];")
 rep("  MODE=m;store.set('tungtung-mode',m);$('modes').hidden=true;","  MODE=m;if(m!=='free')store.set('tungtung-mode',m);$('modes').hidden=true;")
 # syncMenu end hook: append call at end of syncMenu
 rep("$('best').textContent=!gp&&b?'Your best lap here at '+SET.cc+'cc: '+fmt(b,true):gp?'Points after every race: 15 for 1st down to 1 for 12th.':'';\n}",
     "$('best').textContent=!gp&&b?'Your best lap here at '+SET.cc+'cc: '+fmt(b,true):gp?'Points after every race: 15 for 1st down to 1 for 12th.':'';\n  fdSyncMenu();\n}")
 rep("$('artOnline').src=onlineArt();buildOnlineUI();","$('artOnline').src=onlineArt();buildOnlineUI();fdMenuInit();")
 # HTML: mode card (between arcade and online)
-rep('''<span class="mlab"><b>Arcade</b><small>Pick any racer and any track, then go.</small></span></button>''',
- '''<span class="mlab"><b>Arcade</b><small>Pick any racer and any track, then go.</small></span></button>
-    <button class="mcard" data-mode="free" role="radio"><span class="art"><img id="artFree" alt=""></span><span class="tag">Chill</span><span class="mlab"><b>Free Drive</b><small>An endless road that builds itself. No timer, just cruise.</small></span></button>''')
+rep('''    <button class="mcard" data-mode="story" role="radio">''','''    <button class="mcard" data-mode="free" role="radio"><span class="art"><img id="artFree" alt=""></span><span class="tag">Chill</span><span class="mlab"><b>Free Drive</b><small>An endless road that builds itself. No timer, just cruise.</small></span></button>
+    <button class="mcard" data-mode="story" role="radio">''')
 rep('<div class="mcards four" role="radiogroup" aria-label="Game mode">','<div class="mcards four five" role="radiogroup" aria-label="Game mode">')
 # menu options panel
 rep('''    <h2 id="mapH">Choose a track</h2>''','''    <div class="fdopts">
@@ -52,11 +51,26 @@ rep('''    <h2 id="mapH">Choose a track</h2>''','''    <div class="fdopts">
 # HUD
 rep('''  <div id="rank"></div>''','''  <div id="rank"></div>
   <div id="fdHud" hidden><div class="fdcard"><small>Free Drive</small><b id="fdBio">On the road</b><span><i id="fdOdo">0.0 km</i><em id="fdAuto">AUTO</em></span></div><div id="fdToast"></div></div>''')
+rep("if(j&&j.ok&&Array.isArray(j.iceServers)&&j.iceServers.length){window.TT_PEER_CFG=","if(j&&j.ok&&Array.isArray(j.iceServers)&&j.iceServers.length){RELAY.via=j.via;window.TT_PEER_CFG=")
+rep("if(ok)netLog('Relay: Cloudflare ready');","if(ok)netLog('Relay: ready ('+(RELAY.via||'relay')+')');")
 # CSS
 css='''
 /* free drive */
-.mcards.five .mcard{width:min(18vw,270px)}
-@media (max-width:860px){.mcards.five .mcard{width:min(42vw,260px)}}
+/* five mode cards always fit on one screen: sized by both width and height */
+.mcards.four.five{flex-direction:row;flex-wrap:nowrap;overflow:visible;gap:clamp(8px,1.6vw,26px);padding:clamp(8px,2vh,20px) clamp(10px,2vw,22px) clamp(54px,9vh,70px)}
+.mcards.four.five .mcard{flex:none;width:min(17.4vw,calc((100vh - 200px)*.78),270px);aspect-ratio:5/6.4}
+.mcards.four.five .mcard.sel{transform:translateY(-6px) scale(1.03)}
+.mcards.five .mcard .mlab{padding:clamp(6px,1.2vh,12px) clamp(8px,1vw,14px)}
+.mcards.five .mcard .mlab b{font-size:clamp(13px,1.85vw,26px)}
+.mcards.five .mcard .mlab small{font-size:clamp(9.5px,1vw,13px);margin-top:3px}
+.mcards.five .mcard .tag{left:clamp(6px,.8vw,12px);top:clamp(6px,.8vw,12px);padding:clamp(2px,.3vw,5px) clamp(5px,.7vw,10px);font-size:clamp(8.5px,.85vw,12px);border-width:2px}
+@media (max-height:520px){.mcards.four.five{padding-bottom:12px}.mcards.five .mcard .mlab small{display:none}}
+@media (max-width:760px) and (orientation:portrait){
+  .mcards.four.five{display:grid;grid-template-columns:1fr 1fr;align-content:center;gap:10px;padding:10px 14px 14px}
+  .mcards.four.five .mcard{width:auto;aspect-ratio:auto;height:calc((100svh - 130px)/3 - 7px);min-height:120px}
+  .mcards.four.five .mcard:last-child{grid-column:1/-1}
+  .mcards.five .mcard .mlab b{font-size:17px}.mcards.five .mcard .mlab small{font-size:11px}.mcards.five .mcard .tag{font-size:10px}
+}
 .mcard[data-mode="free"] .tag{background:#ff8a1a}
 .fdopts{display:none;flex-direction:column;gap:2px}
 #menu.free .fdopts{display:flex}
