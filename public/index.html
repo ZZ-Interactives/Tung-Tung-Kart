@@ -2431,7 +2431,7 @@ function buildTrackData(M){
   N=Math.round(curve.getLength()/2);
   C=[];T=[];R=[];SEG=[];ELEV=[];GAP=[];EDGE=[];CURV=[];TURN=[];RL=[];GS=[];ES=[];GAP_A=GAP_B=-1;
   const sp=curve.getSpacedPoints(N);
-  for(let i=0;i<N;i++){const p=sp[i].clone();if(p.y<.15&&p.y>-.15)p.y=0;C.push(p);}
+  for(let i=0;i<N;i++){const p=sp[i].clone();if(p.y<.15&&(p.y>-.15||!M.hill))p.y=0;C.push(p);}
   for(let i=0;i<N;i++){const t=C[(i+1)%N].clone().sub(C[(i-1+N)%N]);t.y=0;t.normalize();T.push(t);R.push(new V3(-t.z,0,t.x));}
   for(let i=0;i<N;i++){const a=C[i],b=C[(i+1)%N];SEG.push(Math.hypot(b.x-a.x,b.z-a.z));ELEV.push(a.y>0&&!M.hill);GAP.push(false);}
   if(M.gap)for(let i=0;i<N;i++)if(ELEV[i]&&C[i].x<M.gap.x1&&C[i].x>M.gap.x0&&C[i].z>M.gap.zmin)GAP[i]=true;
@@ -2787,7 +2787,7 @@ function buildScenery(){
       const ax=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,3),poleM);ax.position.set(x-R[i].x*s*1.4,y+8,z-R[i].z*s*1.4);ax.rotation.y=Math.atan2(R[i].x,R[i].z);world.add(ax);
       const bx=x-R[i].x*s*2.8,bz=z-R[i].z*s*2.8;const bulb=new THREE.Mesh(new THREE.SphereGeometry(.32,12,8),bulbM);bulb.position.set(bx,y+7.8,bz);world.add(bulb);
       const gl=glow(0xffc070,6);gl.position.copy(bulb.position);world.add(gl);
-      if(!GAP[i]){const pool=new THREE.Mesh(new THREE.PlaneGeometry(18,18),poolM);pool.rotation.x=-Math.PI/2;pool.position.set(bx,y+.1,bz);world.add(pool);}}
+      if(!GAP[i]&&Math.abs(C[(i+4)%N].y-C[(i-4+N)%N].y)<.05){const pool=new THREE.Mesh(new THREE.PlaneGeometry(18,18),poolM);pool.rotation.x=-Math.PI/2;pool.position.set(bx,y+.1,bz);world.add(pool);}}
     const moon=new THREE.Sprite(new THREE.SpriteMaterial({map:softTex,color:0xaab8d8,fog:false,depthWrite:false,toneMapped:false}));moon.material.userData.lin=true;moon.scale.set(150,150,1);moon.position.set(MCX+sunDir.x*2500,sunDir.y*2500,MCZ+sunDir.z*2500);world.add(moon);
   }else if(M.scen==='cafe'){
     trees(0,220,260,[.9,.92,.08,.55,.62]);clouds(0xffd8e4,.85);flags();
@@ -4321,13 +4321,12 @@ function stepKart(k,c,dt){
   const prev=k.idx;locate(k);
   if(k.roam){}else if(prev>N*.75&&k.idx<N*.25)crossLine(k,1);else if(prev<N*.25&&k.idx>N*.75)crossLine(k,-1);
   if(k.idx>N*.35&&k.idx<N*.65)k.half=true;
-  const e=EDGE[k.idx]-.95,free=k.ghostT>0||k.roam;
+  const e=EDGE[k.idx]-WALL_PAD,free=k.roam;
   if(k.roam){const dx=k.x-MCX,dz=k.z-MCZ,dd=Math.hypot(dx,dz);if(dd>560){k.x=MCX+dx/dd*560;k.z=MCZ+dz/dd*560;k.speed*=.9;}}
   const lim=e+(k.fly?7:3.5);if(free&&!k.roam&&Math.abs(k.lat)>lim){const s=Math.sign(k.lat),o=Math.abs(k.lat)-lim;k.x-=R[k.idx].x*s*o;k.z-=R[k.idx].z*s*o;k.lat=s*lim;const vn=k.vx*R[k.idx].x*s+k.vz*R[k.idx].z*s;if(vn>0){k.vx-=R[k.idx].x*s*vn;k.vz-=R[k.idx].z*s*vn;}}
   if(!free&&Math.abs(k.lat)>e){
     const s=Math.sign(k.lat),nx=R[k.idx].x*s,nz=R[k.idx].z*s,over=Math.abs(k.lat)-e;
-    if(over>1.5){const mv=Math.min(over-1,28*dt);k.x-=nx*mv;k.z-=nz*mv;}
-    else{k.x-=nx*over;k.z-=nz*over;k.lat=s*e;
+    {k.x-=nx*over;k.z-=nz*over;k.lat=s*e;
       const vn=k.vx*nx+k.vz*nz;
       if(vn>0){k.vx-=nx*vn*1.4;k.vz-=nz*vn*1.4;
         if(vn>7){k.speed*=.8;if(k.wallCool<=0){k.wallCool=.4;burst(k.x+nx*1.2,k.y+.6,k.z+nz*1.2,14,[1,.85,.5],9,1,.35);if(k.isPlayer){SFX.bump();cam.shake=Math.max(cam.shake,.25);}}}
@@ -4368,6 +4367,10 @@ function crossLine(k,dir){
   else{if(k.undo){if(k.undo.pushed)k.lapTimes.pop();k.lapStart=k.undo.lapStart;k.undo=null;}k.lap--;k.half=true;}
 }
 function renderSplits(){if(!player.lapTimes.length)return;const best=Math.min(...player.lapTimes);$('splits').innerHTML=player.lapTimes.map((t,i)=>'<div'+(t===best?' class="best"':'')+'>L'+(i+1)+'  '+fmt(t,true)+'</div>').join('');}
+const WALL_PAD=1.15;
+function wallClamp(k){if(k.roam||k.remote||k.rescueT>0||!N)return;locate(k);const e=EDGE[k.idx]-WALL_PAD;if(Math.abs(k.lat)<=e)return;
+  const s=Math.sign(k.lat),nx=R[k.idx].x*s,nz=R[k.idx].z*s,over=Math.abs(k.lat)-e;k.x-=nx*over;k.z-=nz*over;k.lat=s*e;
+  const vn=k.vx*nx+k.vz*nz;if(vn>0){k.vx-=nx*vn;k.vz-=nz*vn;}}
 function collideKarts(dt){const soft=Math.min(1,(dt||1/60)*18);
   for(let i=0;i<karts.length;i++)for(let j=i+1;j<karts.length;j++){
     const a=karts[i],b=karts[j];if(a.rescueT>0||b.rescueT>0)continue;
@@ -5360,7 +5363,7 @@ function physicsStep(dt){
   for(const k of karts){let c;if(k.remote){if(live)stepRemote(k,dt);continue;}
     if(!live)c={steer:0,gas:0,brake:0,drift:k.isPlayer?(input.drift||pad.drift):false};else if(k.lock)c={steer:0,gas:0,brake:1,drift:false};else if(k.isPlayer&&!k.auto)c=playerControl(k);else c=aiControl(k,dt);
     if(live)stepKart(k,c,dt);else k.driftHeld=c.drift;}
-  if(live){collideKarts(dt);updateProjs(dt);}
+  if(live){collideKarts(dt);for(const k of karts)wallClamp(k);updateProjs(dt);}
 }
 function present(dt){
   for(const ps of psList)ps.update(dt);
