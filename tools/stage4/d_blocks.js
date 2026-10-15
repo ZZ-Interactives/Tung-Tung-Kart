@@ -23,7 +23,7 @@ function s4Bldg(o){const r=rng(o.seed>>>0),fx=Math.sin(o.yaw),fz=Math.cos(o.yaw)
     const rub=s4Bucket(cx,cz,'rubble'),rb=s4Bucket(cx,cz,'rust');
     for(let y=hc+3.5;y<h;y+=3.5){const len=.6+r()*cw*.75,lx=sd*(w/2-cw)+sd*len/2;const p=L(lx,y,0);s4Box(inner,p[0],y,p[2],len,.3,d*(.5+r()*.45),yaw,4,4,s4Tint(.6,.58,.55));
       for(let k=0;k<4;k++){const q=L(sd*(w/2-cw+len)+sd*.4,y,(r()-.5)*d*.7);s4Geo(rb,new THREE.CylinderGeometry(.04,.04,1.2,4),q[0],y+.1,q[2],(r()-.5)*.8,0,Math.PI/2*sd+(r()-.5)*.6,1,1,1,s4Tint(.6,.36,.2));}}
-    for(let k=0;k<9;k++){const q=L(sd*(w/2-cw*r()),hc+.4,(r()-.5)*d*.8),s=.8+r()*1.6;s4Geo(rub,new THREE.DodecahedronGeometry(1,0),q[0],hc+s*.3,q[2],r()*3,r()*3,r()*3,s,s*.6,s,s4Tint(.5+r()*.2,.48+r()*.2,.45+r()*.2));}
+    for(let k=0;k<9;k++){const q=L(sd*(w/2-cw*r()),hc+.4,(r()-.5)*d*.8),s=.8+r()*1.6;s4Geo(rub,s4Rock(),q[0],hc+s*.3,q[2],r()*3,r()*3,r()*3,s,s*.6,s,s4Tint(.5+r()*.2,.48+r()*.2,.45+r()*.2));}
     for(let k=0;k<2;k++){const y=hc+1.5+r()*(h-hc-2);const q=L(sd*(w/2-cw-.2),y,(r()-.5)*d*.6);S4.fires.push({x:q[0],y,z:q[2],s:1+r()*1.2,b:1});}
     if(r()<.7){const q=L(sd*(w/2-cw*.5),hc,0);S4.plumes.push({x:q[0],y:hc+2,z:q[2],s:1+r()});}}
   /* storefront band */
@@ -108,7 +108,7 @@ function s4Blocks(){const G=S4K.G,marked=new Map(),key=(x,z)=>x+','+z;
     for(let g=Math.floor((lo-1)/G)*G;g<hi+1;g+=G){if(g+G<lo-1)continue;if(ax==='x'){marked.set(key(g,line),1);marked.set(key(g,line-G),1);}else{marked.set(key(line,g),1);marked.set(key(line-G,g),1);}}};
   for(const p of S4.pieces)markAlong(p);
   /* the side of the outskirts by the ramp: no blocks under the highway */
-  const skip=k=>{const [x,z]=k.split(',').map(Number);if(z<-120)return true;if(S4LOTS[k]||S4SPECIAL[k])return true;if(x>=960&&x<1200&&z>=2880)return true;if(x>=840&&x<1320&&z>=3000)return true;return false;};
+  const skip=k=>{const [x,z]=k.split(',').map(Number);if(z<-120)return true;if(S4LOTS[k]||S4SPECIAL[k])return true;if(x>=960&&x<1200&&z>=3000)return true;/* the castle plaza */return false;};
   const far=new Map();for(const k of marked.keys()){const [x,z]=k.split(',').map(Number);for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){const kk=key(x+dx*G,z+dz*G);if(!marked.has(kk))far.set(kk,1);}}
   for(const k of marked.keys()){if(skip(k))continue;const [x,z]=k.split(',').map(Number);const q=s4Near(x+G/2,z+G/2,-1);s4Block(x,z,S4SEG[S4.path.seg[q.i]].zone,false);}
   for(const k of far.keys()){if(skip(k)||marked.has(k))continue;const [x,z]=k.split(',').map(Number);const q=s4Near(x+G/2,z+G/2,-1);s4Block(x,z,S4SEG[S4.path.seg[q.i]].zone,true);}

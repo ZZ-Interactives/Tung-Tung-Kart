@@ -30,7 +30,9 @@ function s4Start(skipIntro){const st=STORY.stage;STORY.on=true;stopMusic();initA
     s4HudInit();s4Hearts();s4MirrorInit();
     document.body.classList.add('mission','city');$('hud').hidden=false;$('coinsBox').hidden=true;$('sObj').hidden=true;$('sWater').hidden=true;$('sCompass').hidden=true;$('sTimer').hidden=true;$('sBoss').hidden=true;$('sHearts').hidden=false;$('sRadio').hidden=true;
     $('eQuit').textContent='Quit to story';$('eRestart').textContent='Restart stage';$('eRestart').hidden=false;
-    spShown=-1;$('msg').textContent='';updateKartVisuals(0);camera.fov=63;camera.updateProjectionMatrix();updatePSScale();camSnap();s4Light(0,true);s4Vis(true);warmUp();
+    spShown=-1;$('msg').textContent='';updateKartVisuals(0);camera.fov=63;camera.updateProjectionMatrix();updatePSScale();camSnap();s4Light(0,true);s4Vis(true);
+    /* compile the shaders of things that only show up later (drones, bombs, chasers, bolts) now, behind the loading screen */
+    {const T=s4Models(),pw=new THREE.Group();for(const k of['scout','bomb','runner','scrap','heart','turret','bottle'])if(T[k])pw.add(T[k].clone(true));try{pw.add(s3Templates().boltE.clone(true));}catch(e){}pw.position.copy(player.model.group.position);scene.add(pw);warmUp();scene.remove(pw);}
     $('loading').hidden=true;setBanner('');
     if(skipIntro)s4Launch();else{S.mode='cityintro';S4.mode='intro';S4.introT=0;$('hud').hidden=true;showBrief();}
   }catch(err){console.error(err);$('loading').hidden=true;}},40);}

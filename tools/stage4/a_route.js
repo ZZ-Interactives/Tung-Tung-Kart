@@ -5,7 +5,7 @@
    The city is a real street grid. The route is a list of corners; everything else (streets, buildings, side streets
    that dead-end in rubble) is built around it. The kart uses the normal kart physics with its own ground + walls. */
 var S4=null;
-const S4K={G:120,RD:8,WK:4.5,BRD:12,BWK:5,DS:2,STUB:34,KR:.8,KS:.62,CS:.72,BOT:.45,RUN:.65,CURB:.22,VIEW:520};
+const S4K={G:120,RD:8,WK:4.5,BRD:12,BWK:5,DS:2,STUB:34,KR:.8,KS:.62,CS:.72,BOT:.72,RUN:.65,CURB:.22,VIEW:520};
 const S4DIFF={chill:{hp:7,cc:100,chase:.8,inv:1.9,fire:.7,boss:.86,react:1.25},normal:{hp:5,cc:150,chase:.87,inv:1.45,fire:1,boss:1,react:1},spicy:{hp:4,cc:150,chase:.93,inv:1.15,fire:1.3,boss:1.12,react:.82}};
 /* the corners of the route (x, z, deck height) */
 const S4N=[[0,-900,24],[0,-560,24],[0,-250,0],[0,0],[0,360],[-360,360],[-360,720],[-180,720],[-180,840],[120,840],[120,1200],[480,1200],[480,2160],[840,2160],[840,2760],[1080,2760],[1080,3000],[1080,3190]];

@@ -42,17 +42,33 @@ function s4Models(){if(S4T)return S4T;const M3=s3Mats(),M=s4Mats(),T=S4T={};
   /* breakables (instanced): trash can, cone, crate, hydrant, shopping cart, cardboard box */
   const can=mergeGeos([new THREE.CylinderGeometry(.36,.32,.95,14).translate(0,.47,0),new THREE.TorusGeometry(.355,.03,6,16).rotateX(Math.PI/2).translate(0,.3,0),new THREE.TorusGeometry(.36,.03,6,16).rotateX(Math.PI/2).translate(0,.7,0)]);
   const lid=new THREE.CylinderGeometry(.39,.39,.08,14).translate(0,.99,0);
-  const cone=mergeGeos([new THREE.ConeGeometry(.28,.8,12).translate(0,.45,0),new THREE.BoxGeometry(.6,.06,.6).translate(0,.03,0)]);
-  const crateT=tex(mkCanvas(128,128,(g,w,h)=>{g.fillStyle='#9a7246';g.fillRect(0,0,w,h);g.strokeStyle='#5a3a1e';g.lineWidth=4;for(let y=0;y<h;y+=32){g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke();}g.lineWidth=10;g.strokeRect(5,5,w-10,h-10);g.beginPath();g.moveTo(8,8);g.lineTo(w-8,h-8);g.stroke();g.fillStyle='#3ee0ff';g.font='bold 18px Impact';g.textAlign='center';g.fillText('GROK',64,70);}),false);
-  const hyd=mergeGeos([new THREE.CylinderGeometry(.2,.24,.7,10).translate(0,.35,0),new THREE.SphereGeometry(.21,10,8).translate(0,.72,0),new THREE.CylinderGeometry(.08,.08,.5,8).rotateZ(Math.PI/2).translate(0,.45,0)]);
-  const cart=mergeGeos([new THREE.BoxGeometry(.7,.55,1).translate(0,.75,0),new THREE.BoxGeometry(.05,.6,.05).translate(.3,.3,.45),new THREE.BoxGeometry(.05,.6,.05).translate(-.3,.3,.45),new THREE.BoxGeometry(.05,.6,.05).translate(.3,.3,-.45),new THREE.BoxGeometry(.05,.6,.05).translate(-.3,.3,-.45),new THREE.BoxGeometry(.7,.05,.05).translate(0,1.1,-.55)]);
-  const box=new THREE.BoxGeometry(.8,.6,.6).translate(0,.3,0);
+  const cone=mergeGeos([new THREE.ConeGeometry(.28,.8,16).translate(0,.45,0),new THREE.BoxGeometry(.6,.06,.6).translate(0,.03,0)]);
+  const coneBand=mergeGeos([new THREE.CylinderGeometry(.165,.2,.1,16,1,true).translate(0,.5,0),new THREE.CylinderGeometry(.105,.135,.08,16,1,true).translate(0,.68,0)]);
+  const crateT=tex(mkCanvas(128,128,(g,w,h)=>{g.fillStyle='#a67a4a';g.fillRect(0,0,w,h);const r=rng(4);for(let y=0;y<h;y+=32){g.fillStyle='rgba(60,35,15,'+(.15+r()*.15)+')';g.fillRect(0,y,w,3);for(let i=0;i<18;i++){g.fillStyle='rgba(70,40,15,.12)';g.fillRect(r()*w,y+4+r()*24,8+r()*30,1);}}
+    g.fillStyle='rgba(20,30,40,.8)';g.font='bold 20px Impact';g.textAlign='center';g.fillText('GROK',64,60);g.font='bold 11px Impact';g.fillText('PROPERTY',64,78);}),false);
+  /* crate: planked faces + a frame of battens and corner posts */
+  const bat=[];const E=.56,t=.09;for(const sx of[-1,1])for(const sz of[-1,1])bat.push(new THREE.BoxGeometry(t,1.12,t).translate(sx*E,.56,sz*E));
+  for(const y of[.045,1.075])for(const s of[-1,1]){bat.push(new THREE.BoxGeometry(1.12,t,t).translate(0,y,s*E));bat.push(new THREE.BoxGeometry(t,t,1.12).translate(s*E,y,0));}
+  for(const s of[-1,1]){const d=new THREE.BoxGeometry(.08,1.36,.05);d.rotateZ(.79);d.translate(0,.56,s*(E+.005));bat.push(d);const d2=new THREE.BoxGeometry(.05,1.36,.08);d2.rotateX(.79);d2.translate(s*(E+.005),.56,0);bat.push(d2);}
+  const crateF=mergeGeos(bat);
+  const hyd=mergeGeos([new THREE.CylinderGeometry(.2,.24,.7,12).translate(0,.35,0),new THREE.SphereGeometry(.21,12,8).translate(0,.72,0),new THREE.CylinderGeometry(.08,.08,.5,8).rotateZ(Math.PI/2).translate(0,.45,0),new THREE.CylinderGeometry(.27,.27,.07,12).translate(0,.04,0),new THREE.CylinderGeometry(.05,.05,.12,6).translate(0,.95,0)]);
+  /* shopping cart: wire basket (rails + grid), child seat, handle, castors */
+  const cw=[],R=(w,h,d,x,y,z,rx,ry,rz)=>{const b=new THREE.BoxGeometry(w,h,d);if(rx)b.rotateX(rx);if(ry)b.rotateY(ry);if(rz)b.rotateZ(rz);b.translate(x,y,z);cw.push(b);};
+  for(const y of[.5,.75,1.02])R(.66,.025,.025,0,y,.5),R(.74,.025,.025,0,y,-.5),R(.025,.025,1.0,.35,y,0),R(.025,.025,1.0,-.35,y,0);
+  for(let i=-3;i<=3;i++){R(.02,.52,.02,i*.1,.76,.5);R(.02,.52,.02,i*.11,.76,-.5);}for(let i=-4;i<=4;i++){R(.02,.52,.02,.35,.76,i*.11);R(.02,.52,.02,-.35,.76,i*.11);}
+  for(let i=-3;i<=3;i++)R(.02,.02,1,i*.1,.5,0);R(.8,.04,.04,0,1.14,-.62);for(const s of[-1,1])R(.03,.03,.22,s*.36,1.08,-.55,.5);
+  for(const sx of[-1,1])for(const sz of[-1,1])R(.03,.42,.03,sx*.3,.24,sz*.42);R(.62,.03,.03,0,.12,.42);R(.62,.03,.03,0,.12,-.42);
+  const cart=mergeGeos(cw),wheels=[];for(const sx of[-1,1])for(const sz of[-1,1])wheels.push(new THREE.CylinderGeometry(.06,.06,.04,10).rotateZ(Math.PI/2).translate(sx*.3,.06,sz*.42));const castor=mergeGeos(wheels),handleG=new THREE.BoxGeometry(.6,.06,.06).translate(0,1.14,-.64);
+  /* cardboard box with tape and a flap */
+  const box=new THREE.BoxGeometry(.8,.6,.6).translate(0,.3,0),tape=mergeGeos([new THREE.BoxGeometry(.82,.012,.1).translate(0,.606,0),new THREE.BoxGeometry(.1,.3,.612).translate(.0,.45,0).rotateY(Math.PI/2)]);
+  const flap=new THREE.BoxGeometry(.8,.012,.3);flap.translate(0,0,.15);flap.rotateX(-.9);flap.translate(0,.6,.3);const boxF=mergeGeos([flap]);
+  const met=std({color:linC(0xa8b0b8),metalness:.85,roughness:.3}),rub=std({color:linC(0x1a1a1c),roughness:.8});
   T.brk={can:{parts:[[can,std({color:linC(0x4a5a4e),metalness:.6,roughness:.45})],[lid,std({color:linC(0x3a4a3e),metalness:.6,roughness:.4})]],r:.55,top:1.1,slow:.94,heart:.18,snd:'can'},
-    cone:{parts:[[cone,std({color:linC(0xff6a1a),roughness:.6})]],r:.45,top:.9,slow:.99,heart:0,snd:'soft'},
-    crate:{parts:[[new THREE.BoxGeometry(1.1,1.1,1.1).translate(0,.55,0),std({map:crateT,roughness:.85})]],r:.8,top:1.2,slow:.9,heart:.32,snd:'wood'},
+    cone:{parts:[[cone,std({color:linC(0xff6a1a),roughness:.6})],[coneBand,std({color:linC(0xf4f4ee),roughness:.4,side:THREE.DoubleSide})]],r:.45,top:.9,slow:.99,heart:0,snd:'soft'},
+    crate:{parts:[[new THREE.BoxGeometry(1.08,1.08,1.08).translate(0,.56,0),std({map:crateT,roughness:.85})],[crateF,std({color:linC(0x6a4626),roughness:.9})]],r:.8,top:1.2,slow:.9,heart:.32,snd:'wood'},
     hydrant:{parts:[[hyd,std({color:linC(0xc8302a),metalness:.4,roughness:.5})]],r:.4,top:.9,slow:.9,heart:0,snd:'can',geyser:true},
-    cart:{parts:[[cart,std({color:linC(0xa8b0b8),metalness:.8,roughness:.3,wireframe:false})]],r:.7,top:1.2,slow:.95,heart:.1,snd:'can'},
-    box:{parts:[[box,std({color:linC(0xb08858),roughness:.9})]],r:.55,top:.7,slow:.98,heart:.12,snd:'soft'}};
+    cart:{parts:[[cart,met],[castor,rub],[handleG,std({color:linC(0xd83a2a),roughness:.5})]],r:.7,top:1.2,slow:.95,heart:.1,snd:'can'},
+    box:{parts:[[box,std({color:linC(0xb08858),roughness:.9})],[tape,std({color:linC(0xd8c89a),roughness:.4,metalness:.1})],[boxF,std({color:linC(0x9a7448),roughness:.9,side:THREE.DoubleSide})]],r:.55,top:.7,slow:.98,heart:.12,snd:'soft'}};
   return T;}
 /* ---------- the GROK Crusher ---------- */
 function s4MakeCrusher(){const T=s4Models(),M3=s3Mats(),gm=T.gm,gd=T.gd,edge=T.edge,std=M3.std,g=new THREE.Group(),body=new THREE.Group();g.add(body);

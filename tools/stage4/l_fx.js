@@ -56,4 +56,8 @@ function s4Light(dt,snap){const c=S4;if(!c||!scene.fog)return;const seg=S4.path.
   if(c.back)c.back.material.color.setRGB(1,lerp(.9,.6,L.sky),lerp(.85,.6,L.sky));}
 /* only draw city chunks near the camera */
 function s4Vis(force,dt){const c=S4;if(!force&&(c.visT=(c.visT||0)-(dt||1/60))>0)return;c.visT=.2;const cp=camera.position,R=Math.min(scene.fog?scene.fog.far:500,900)+170;/* 170 = half a chunk's diagonal */
-  for(const ch of c.chunks.values()){if(!ch.g)continue;const d=Math.hypot(ch.cx-cp.x,ch.cz-cp.z);ch.g.visible=d<R;}}
+  const cut=c.cp?c.cp.s-300:-1e9;
+  for(const ch of c.chunks.values()){if(!ch.g)continue;const d=Math.hypot(ch.cx-cp.x,ch.cz-cp.z);
+    /* well behind the last checkpoint and out of sight: free its graphics memory for good (keeps iPads from running out) */
+    if(ch.sMax<cut&&d>R+60){s4Retire(ch);continue;}ch.g.visible=d<R;}}
+function s4Retire(ch){const g=ch.g;ch.g=null;ch.dead=true;if(g.parent)g.parent.remove(g);g.traverse(o=>{if(o.userData&&o.userData.bk&&o.geometry)o.geometry.dispose();});}

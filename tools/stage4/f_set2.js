@@ -58,7 +58,7 @@ function s4Camp(id){const M=s4Mats(),G=S4.G,lot=S4.lots[id],B=(k,x,z)=>s4Bucket(
   {const [x,z]=at(32,48);const tg=new THREE.Group();tg.position.set(x,0,z);const glassT=new THREE.Mesh(new THREE.CylinderGeometry(3,3,6,22,1,true),s3Mats().glass);glassT.position.y=3.6;tg.add(glassT);const w=new THREE.Mesh(new THREE.CylinderGeometry(2.8,2.8,4.6,22),M.water);w.position.y=3;tg.add(w);
     for(const y of[.6,6.6]){const ring=new THREE.Mesh(new THREE.CylinderGeometry(3.2,3.2,.5,22),s3Mats().steel);ring.position.y=y;tg.add(ring);}const lab=new THREE.Mesh(new THREE.PlaneGeometry(4.6,1.1),M.sign('STOLEN H2O','#14123a','#3ee0ff',512,120,64));lab.position.set(0,2.2,3.1);lab.rotation.y=Math.atan2(-inward[0],-inward[1]);tg.add(lab);G.add(tg);linearize(tg);s4Col({x,z,r:3.3,kind:'tank',top:7});}
   for(let k=0;k<2;k++){const [x,z]=at(-40+k*80,40);s4Geo(B('dark',x,z),new THREE.CylinderGeometry(.1,.12,9,6),x,4.5,z,0,0,0,1,1,1);const bb=B('banner',x,z),yaw=Math.atan2(inward[0],inward[1]);const rx=Math.cos(yaw),rz=-Math.sin(yaw);s4Quad(bb,[x,5,z],[x+rx*2.6,5,z+rz*2.6],[x+rx*2.6,8.8,z+rz*2.6],[x,8.8,z],[0,0],[1,0],[1,1],[0,1]);s4Col({x,z,r:.3,kind:'pole',top:9});}
-  for(let k=0;k<4;k++){const [x,z]=at(-44+r()*88,62+r()*20),s=1.4+r()*1.4;for(let q=0;q<4;q++)s4Geo(B(q%2?'rust':'rubble',x,z),new THREE.DodecahedronGeometry(1,0),x+(r()-.5)*2,s*.4,z+(r()-.5)*2,r()*3,r()*3,0,s,s*.6,s,s4Tint(.5,.42,.36));s4Col({x,z,r:s*1.1,kind:'scrap',top:2});}
+  for(let k=0;k<4;k++){const [x,z]=at(-44+r()*88,62+r()*20),s=1.4+r()*1.4;for(let q=0;q<4;q++)s4Geo(B(q%2?'rust':'rubble',x,z),s4Rock(),x+(r()-.5)*2,s*.4,z+(r()-.5)*2,r()*3,r()*3,0,s,s*.6,s,s4Tint(.5,.42,.36));s4Col({x,z,r:s*1.1,kind:'scrap',top:2});}
   /* a generator with GROK lights */
   {const [x,z]=at(-10,48);s4Box(B('grokD',x,z),x,.9,z,3,1.8,2,0,1,1);s4Box(B('cyanV',x,z),x,1.85,z,3.02,.15,.15,0,1,1);s4ColBox(x,z,1.6,1.1,0,{kind:'box',top:2});S4.blinkers.push([x,2.4,z,2,1]);}
   /* crates you can smash (some hide hearts) and the bots that throw scrap at you */
@@ -85,7 +85,7 @@ function s4Collapse(){const M=s4Mats(),G=S4.G,bx=0,bz=1200;
   /* rubble only where the straight and right-hand streets are (never on the crossing or the way out to the left) */
   const R=s4Bk();const rr=rng(9),zones=[[105,134,1211,1246,26],[78,108,1185,1215,22],[58,110,1210,1262,30]];
   for(const [xa,xb,za,zb,n] of zones)for(let k=0;k<n;k++){const x=xa+rr()*(xb-xa),z=za+rr()*(zb-za),s=1.6+rr()*3.6,hh=(x>104&&z>1210&&x<112)?1.4:(.5+rr()*.6);
-    s4Geo(R,new THREE.DodecahedronGeometry(1,0),x,s*.35,z,rr()*3,rr()*3,rr()*3,s,s*hh,s,[.4+rr()*.2,.38+rr()*.2,.36+rr()*.2]);}
+    s4Geo(R,s4Rock(),x,s*.35,z,rr()*3,rr()*3,rr()*3,s,s*hh,s,[.4+rr()*.2,.38+rr()*.2,.36+rr()*.2]);}
   for(let k=0;k<12;k++){const zn=zones[k%3],x=zn[0]+rr()*(zn[1]-zn[0]),z=zn[2]+rr()*(zn[3]-zn[2]);s4Geo(R,new THREE.BoxGeometry(8+rr()*6,.5,3+rr()*3),x,1+rr()*4,z,(rr()-.5)*1.2,rr()*3,(rr()-.5)*1.2,1,1,1,[.55,.52,.5]);}
   const rub=s4BkMesh(R,M.rubble);rub.castShadow=rub.receiveShadow=true;rub.visible=false;G.add(rub);
   const stump=s4Bk();s4Box(stump,107.5-20,6,1232,40,12,40,0,12,14,[.5,.46,.44],63);const sm=s4BkMesh(stump,M.fac.burnt);sm.visible=false;G.add(sm);

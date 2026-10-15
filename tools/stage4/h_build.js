@@ -25,9 +25,9 @@ function s4SidewalkRun(){const s0=s4S(4,150),s1=s4S(4,232);
   {const q=s4At((s0+s1)/2,-2);s4Car('bus',q.x,q.z,q.h+.08,{burnt:true,fire:true,collide:false});}
   /* concrete barriers fill the gaps so the road is fully shut */
   for(let s=s0-4;s<s1+4;s+=3){const q=s4At(s,0);s4ColBox(q.x,q.z,7.9,1.6,q.h,{kind:'wreck',top:3});}
-  for(const s of[s0-6,s1+6]){for(let l=-7;l<=7;l+=2.3){const q=s4At(s,l);s4Box(s4Bucket(q.x,q.z,'conc'),q.x,.6,q.z,2.2,1.2,.7,q.h+Math.PI/2,4,4,s4Tint(.85,.82,.78));}}
+  for(const s of[s0-6,s1+6]){const q=s4At(s,0);s4Jersey(q.x,0,q.z,16.5,q.h+Math.PI/2,s4Tint(.85,.82,.78),{sy:1.25});}
   /* left sidewalk: rubble and a fallen pole */
-  for(let s=s0-6;s<s1+6;s+=4){const q=s4At(s,-10.4);s4Geo(s4Bucket(q.x,q.z,'rubble'),new THREE.DodecahedronGeometry(1,0),q.x,.8,q.z,Math.random()*3,Math.random()*3,0,1.5,1,1.6,s4Tint(.45,.42,.4));s4Col({x:q.x,z:q.z,r:1.6,kind:'rubble',top:2});}
+  for(let s=s0-6;s<s1+6;s+=4){const q=s4At(s,-10.4);s4Geo(s4Bucket(q.x,q.z,'rubble'),s4Rock(),q.x,.8,q.z,Math.random()*3,Math.random()*3,0,1.5,1,1.6,s4Tint(.45,.42,.4));s4Col({x:q.x,z:q.z,r:1.6,kind:'rubble',top:2});}
   /* trash cans on the right sidewalk */
   for(let s=s0-10;s<s1+10;s+=5.5){const q=s4At(s,10.2+(Math.random()-.5)*1.2);S4.cans.push([q.x,q.z]);if(Math.random()<.3){const q2=s4At(s+2.5,9.4);S4.cones.push([q2.x,0.22,q2.z]);}}
   const warn=s4At(s0-24,0);const sg=new THREE.Mesh(new THREE.PlaneGeometry(6,1.6),s4Mats().sign('ROAD CLOSED →','#e8b030','#14123a',512,140,56));sg.position.set(warn.x,3,warn.z);sg.rotation.y=warn.h+Math.PI;S4.G.add(sg);}
@@ -35,7 +35,7 @@ function s4SidewalkRun(){const s0=s4S(4,150),s1=s4S(4,232);
 function s4Build(){const M=s4Mats(),G=S4.G;
   S4.path=s4BuildPath();s4Rects();
   for(const st of S4.stubs)if(st.kind==='collapse')st.r.on=false;
-  s4Plan();s4BuildStreets();s4Deck();s4Outskirts();s4RailBridge();s4PipeStreet();s4SidewalkRun();
+  s4Plan();s4BuildStreets();s4Deck();s4Outskirts();s4Suburbs();s4RailBridge();s4PipeStreet();s4SidewalkRun();
   s4Arch(s4S(6,70),'bus');s4Arch(s4S(9,60),'truck');
   s4Mall();s4Camp('campA');s4Camp('campB');s4Camp('campC');s4Collapse();s4Aqueduct();s4BossProps();s4Castle();
   s4Blocks();s4Infill();s4Barricades();s4StreetProps();
@@ -48,8 +48,8 @@ function s4Build(){const M=s4Mats(),G=S4.G;
   s4Arrows();s4Backdrop();
   /* bake the chunks */
   for(const ch of S4.chunks.values()){const g=new THREE.Group();for(const k in ch.bk){const mat=s4MatOf(k);if(!mat){console.warn('s4 missing material',k);continue;}const m=s4BkMesh(ch.bk[k],mat,true);if(!m)continue;
-      const flat=/^(road|blvd|asph|walk|curb|paint|yellow|manhole|scorch|puddle|tile|paver|dirt|deck)$/.test(k);m.castShadow=!flat&&!/^(signs|lamp|sig|cyanV|redV|fence|banner)/.test(k);m.receiveShadow=true;if(k==='scorch'||k==='puddle'){m.renderOrder=1;}g.add(m);}
-    ch.bk=null;ch.g=g;G.add(g);}
+      const flat=/^(road|blvd|asph|walk|curb|paint|yellow|manhole|scorch|puddle|tile|paver|dirt|deck)$/.test(k);m.castShadow=!flat&&!/^(signs|lamp|sig|cyanV|redV|fence|banner)/.test(k);m.receiveShadow=true;if(k==='scorch'||k==='puddle'){m.renderOrder=1;}m.userData.bk=1;g.add(m);}
+    ch.bk=null;ch.g=g;G.add(g);const q=s4Near(ch.cx,ch.cz,-1,{});ch.sMax=q.s+200;}
   /* blinking lights and fires get sprites, grouped by chunk so far ones hide */
   for(const [x,y,z,s,b] of S4.blinkers){const gl=glow(0xff3040,s);gl.position.set(x,y,z);gl.userData.blink=b;s4ChunkAdd(gl,x,z);S4.blinkS.push(gl);}
   for(const f of S4.fires){const gl=glow(f.wall?0xff7a20:0xff8a30,(f.s||1)*4.2);gl.material.opacity=.55;gl.position.set(f.x,f.y+.6,f.z);if(f.tower)S4.collapse.piv.attach(gl);else s4ChunkAdd(gl,f.x,f.z);f.gl=gl;f.ph=Math.random()*6;}
@@ -61,10 +61,14 @@ function s4ChunkAdd(o,x,z){const ch=S4.chunks.get(Math.floor(x/240)+','+Math.flo
 /* ---------- breakables: instanced, so hundreds of them cost a few draw calls ---------- */
 function s4Breakables(){const T=s4Models();S4.brk=[];S4.bgrid=new Map();const M4=new THREE.Matrix4(),Q=new THREE.Quaternion(),Sc=new V3(1,1,1),P=new V3(),Y=new V3(0,1,0);
   const lists={can:S4.cans,cone:S4.cones,crate:S4.crates,hydrant:S4.hydrants,cart:S4.carts,box:S4.boxes};
-  for(const type in lists){const L=lists[type];if(!L.length)continue;const def=T.brk[type],ims=def.parts.map(([geo,mat])=>{const im=new THREE.InstancedMesh(geo,mat,L.length);im.castShadow=true;im.receiveShadow=true;S4.G.add(im);return im;});
-    L.forEach((p,i)=>{const x=p[0],z=p.length>2?p[2]:p[1],y=p.length>2?p[1]:s4Floor(x,z).y,yaw=Math.random()*6.28;Q.setFromAxisAngle(Y,yaw);P.set(x,y,z);M4.compose(P,Q,Sc);for(const im of ims)im.setMatrixAt(i,M4);
-      const b={type,def,ims,i,x,y,z,yaw,alive:true};S4.brk.push(b);const k=Math.floor(x/30)+','+Math.floor(z/30);if(!S4.bgrid.has(k))S4.bgrid.set(k,[]);S4.bgrid.get(k).push(b);});
-    for(const im of ims)im.instanceMatrix.needsUpdate=true;}}
+  /* one set of instanced meshes per city chunk, so each set is shown/hidden with its chunk. (An instanced mesh is culled by
+     its base shape at the world origin, so a single city-wide set would vanish whenever the origin left the screen.) */
+  for(const type in lists){const L=lists[type];if(!L.length)continue;const def=T.brk[type],by=new Map();
+    for(const p of L){const x=p[0],z=p.length>2?p[2]:p[1],k=Math.floor(x/240)+','+Math.floor(z/240);if(!by.has(k))by.set(k,[]);by.get(k).push(p);}
+    for(const [ck,PL] of by){const ch=S4.chunks.get(ck);const ims=def.parts.map(([geo,mat])=>{const im=new THREE.InstancedMesh(geo,mat,PL.length);im.castShadow=true;im.receiveShadow=true;im.frustumCulled=false;(ch&&ch.g||S4.G).add(im);return im;});
+      PL.forEach((p,i)=>{const x=p[0],z=p.length>2?p[2]:p[1],y=p.length>2?p[1]:s4Floor(x,z).y,yaw=Math.random()*6.28;Q.setFromAxisAngle(Y,yaw);P.set(x,y,z);M4.compose(P,Q,Sc);for(const im of ims)im.setMatrixAt(i,M4);
+        const b={type,def,ims,i,x,y,z,yaw,alive:true};S4.brk.push(b);const k=Math.floor(x/30)+','+Math.floor(z/30);if(!S4.bgrid.has(k))S4.bgrid.set(k,[]);S4.bgrid.get(k).push(b);});
+      for(const im of ims)im.instanceMatrix.needsUpdate=true;}}}
 /* ---------- the things that move: placed now, woken up by the script ---------- */
 function s4Entities(){const T=s4Models();S4.sleep=[];S4.turrets=[];S4.duds=[];S4.thr=[];S4.bottles=[];S4.hearts=[];
   for(const [sg,t,lat] of S4PLAN.sleepers)S4.sleep.push(s4MakeSleeper(s4S(sg,t),lat));

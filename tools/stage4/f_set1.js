@@ -6,7 +6,7 @@ function s4Deck(){const M=s4Mats(),DY=24,G=S4.G;
   for(let z=-924;z<-560;z+=36){const len=Math.min(36,-560-z),cz=z+len/2;
     s4Box(B('deck',0,cz),0,DY-.01,cz,20,.02,len,0,20,16,null,4);
     s4Box(B('conc',0,cz),0,DY-.9,cz,21,1.8,len,0,4,4,s4Tint(.78,.75,.72),1|2|8|16|32);
-    /* jersey barriers */for(const sx of[-1,1]){s4Box(B('conc',sx*10.4,cz),sx*10.45,DY+.55,cz,.8,1.1,len,0,4,4,s4Tint(.86,.84,.8),63);s4Box(B('conc',sx*10.4,cz),sx*10.45,DY+1.15,cz,.4,.15,len,0,4,4,s4Tint(.8,.78,.74),63);}
+    /* jersey barriers */for(const sx of[-1,1])s4Jersey(sx*10.45,DY,cz,len,0,s4Tint(.86,.84,.8),{sy:1.3});
     /* pier */const pz=z+18;if(pz<-565){s4Box(B('conc',0,pz),0,DY/2-1,pz,7,DY-2,3,0,4,4,s4Tint(.7,.68,.64),63);s4Box(B('conc',0,pz),0,DY-2.2,pz,20,1.6,3.4,0,4,4,s4Tint(.72,.7,.66),63);}}
   /* lamp poles on the deck, some bent */
   for(let z=-910;z<-570;z+=44){for(const sx of[-1,1]){const bent=Math.random()<.35,x=sx*10.4;s4Geo(B('metal',x,z),new THREE.CylinderGeometry(.12,.18,9,8),x,DY+5.6,z,0,0,bent?sx*.35:0,1,1,1);
@@ -81,7 +81,7 @@ function s4PipeStreet(){const M=s4Mats(),G=S4.G,B=(k,x,z)=>s4Bucket(x,z,k),px=-3
   /* the wreck pile across the street at z=622 with a wall of fire in the middle */
   const fz=626;
   s4Car('bus',-366.5,fz,Math.PI/2+.12,{burnt:true,fire:true});s4Car('sedan',-352,fz+1,1.9,{burnt:true,crushed:true,roll:.35,fire:true});s4Car('van',-350,fz-2.5,.3,{burnt:true,fire:false});
-  for(let k=0;k<8;k++){const x=-372+Math.random()*24,z=fz+(Math.random()-.5)*5;if(Math.abs(x+360)<4)continue;s4Geo(B('rubble',x,z),new THREE.DodecahedronGeometry(1,0),x,.4,z,Math.random()*3,Math.random()*3,0,1+Math.random(),.6,1+Math.random(),s4Tint(.4,.38,.36));}
+  for(let k=0;k<8;k++){const x=-372+Math.random()*24,z=fz+(Math.random()-.5)*5;if(Math.abs(x+360)<4)continue;s4Geo(B('rubble',x,z),s4Rock(),x,.4,z,Math.random()*3,Math.random()*3,0,1+Math.random(),.6,1+Math.random(),s4Tint(.4,.38,.36));}
   for(const sx of[-1,1]){const x=-360+sx*9.6;s4ColBox(x,fz,3.6,2.4,0,{kind:'wreck',top:3});}
   const fw=s4ColBox(-360,fz,3.1,1.4,0,{kind:'firewall',top:5});
   S4.firewall={x:-360,z:fz,c:fw,heat:1,out:false,f:[]};
@@ -96,7 +96,7 @@ function s4Arch(s,kind){const q=s4At(s,0),h=q.h,fx=Math.sin(h),fz=Math.cos(h),rx
   /* the big one on top, across the road */const [cx,cz]=P(-1,0);
   if(kind==='bus')s4Car('bus',cx,cz,h+Math.PI/2+.06,{y:3.1,roll:.12,collide:false,burnt:Math.random()<.5,fire:false});else s4Car('trailer',cx,cz,h+Math.PI/2-.05,{y:3.2,roll:-.08,collide:false});
   /* rubble that closes the sidewalks */
-  for(const lat of[-10.4,-9,9,10.6]){const [x,z]=P(lat,(Math.random()-.5)*2);s4Geo(B('rubble',x,z),new THREE.DodecahedronGeometry(1,0),x,.8,z,Math.random()*3,Math.random()*3,0,1.6,1.1,1.8,s4Tint(.45,.42,.4));s4Col({x,z,r:1.7,kind:'rubble',top:2});}
+  for(const lat of[-10.4,-9,9,10.6]){const [x,z]=P(lat,(Math.random()-.5)*2);s4Geo(B('rubble',x,z),s4Rock(),x,.8,z,Math.random()*3,Math.random()*3,0,1.6,1.1,1.8,s4Tint(.45,.42,.4));s4Col({x,z,r:1.7,kind:'rubble',top:2});}
   for(let k=0;k<5;k++){const [x,z]=P(-6+Math.random()*10,(Math.random()-.5)*3);S4.decals.push([x,z,Math.random()*6,1.4,'scorch']);}
   S4.dark.push({x0:Math.min(...[P(-6,-1.6)[0],P(4,1.6)[0]]),x1:Math.max(...[P(-6,-1.6)[0],P(4,1.6)[0]]),z0:Math.min(P(-6,-1.6)[1],P(4,1.6)[1]),z1:Math.max(P(-6,-1.6)[1],P(4,1.6)[1]),a:.35});
   S4.sparks.push({x:cx,y:3,z:cz});}
@@ -105,11 +105,11 @@ function s4Arch(s,kind){const q=s4At(s,0),h=q.h,fx=Math.sin(h),fz=Math.cos(h),rx
 function s4Barricades(){const M=s4Mats(),G=S4.G,B=(k,x,z)=>s4Bucket(x,z,k);
   for(const st of S4.stubs){if(st.kind==='collapse')continue;const yaw=Math.atan2(st.vx,st.vz),ex=st.ex,ez=st.ez,rx=-st.vz,rz=st.vx,r=rng(((ex*7+ez*13)*100)>>>0),type=r();
     const at=(lat,f)=>[ex+rx*lat+st.vx*(f||0),ez+rz*lat+st.vz*(f||0)];
-    if(type<.4){/* rubble mound */for(let k=0;k<22;k++){const lat=(r()-.5)*25,f=r()*6,[x,z]=at(lat,f),s=1+r()*2.6;s4Geo(B('rubble',x,z),new THREE.DodecahedronGeometry(1,0),x,s*.5,z,r()*3,r()*3,r()*3,s,s*(.6+r()*.6),s,s4Tint(.45+r()*.2,.42+r()*.2,.4+r()*.2));}
+    if(type<.4){/* rubble mound */for(let k=0;k<22;k++){const lat=(r()-.5)*25,f=r()*6,[x,z]=at(lat,f),s=1+r()*2.6;s4Geo(B('rubble',x,z),s4Rock(),x,s*.5,z,r()*3,r()*3,r()*3,s,s*(.6+r()*.6),s,s4Tint(.45+r()*.2,.42+r()*.2,.4+r()*.2));}
       for(let k=0;k<3;k++){const [x,z]=at((r()-.5)*18,2+r()*3);s4Geo(B('conc',x,z),new THREE.BoxGeometry(6+r()*4,.5,3),x,1.5+r()*2,z,(r()-.5)*.8,yaw+r(),(r()-.5)*.8,1,1,1,s4Tint(.6,.58,.55));}}
     else if(type<.7){/* wreck pile */const kinds=['sedan','hatch','suv','van'];for(let k=0;k<4;k++){const [x,z]=at(-9+k*6+(r()-.5)*2,1+r()*2);s4Car(kinds[(r()*4)|0],x,z,yaw+Math.PI/2+(r()-.5)*.8,{burnt:r()<.5,collide:false,fire:r()<.3,crushed:r()<.5,roll:(r()-.5)*.4});}
       const [x,z]=at((r()-.5)*6,2.5);s4Car('sedan',x,z,yaw+r()*3,{y:1.9,roll:(r()-.5)*.7,collide:false,burnt:true,fire:false});}
-    else{/* GROK checkpoint wall */for(let k=-5;k<=5;k++){const [x,z]=at(k*2.3,.5);s4Box(B('conc',x,z),x,.6,z,2.2,1.2,.7,yaw,4,4,s4Tint(.82,.8,.76));}
+    else{/* GROK checkpoint wall */{const [x,z]=at(0,.5);s4Jersey(x,0,z,25,yaw+Math.PI/2,s4Tint(.82,.8,.76),{grok:true,sy:1.25});}
       const [fx,fz]=at(0,2);const fb=B('fence',fx,fz);const a=at(-12.5,2),b=at(12.5,2);s4Quad(fb,[a[0],0,a[1]],[b[0],0,b[1]],[b[0],4,b[1]],[a[0],4,a[1]],[0,0],[25/1.6,0],[25/1.6,4/1.6],[0,4/1.6]);
       for(let k=-12;k<=12;k+=4){const [x,z]=at(k,2);s4Box(B('grokD',x,z),x,2.1,z,.25,4.2,.25,yaw,1,1);}
       const sg=new THREE.Mesh(new THREE.PlaneGeometry(6,1.6),M.sign('GROK ZONE\nKEEP OUT','#0c0f1e','#ff3a4a',512,140,48));const [sx,sz]=at(0,1.6);sg.position.set(sx,3,sz);sg.rotation.y=yaw+Math.PI;G.add(sg);

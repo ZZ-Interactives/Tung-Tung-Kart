@@ -169,3 +169,19 @@ function s4Mats(){if(S4MAT)return S4MAT;const M3=s3Mats(),std=M3.std,C=c=>linC(c
   M.cloth=std({color:C(0xffffff),roughness:.9,side:THREE.DoubleSide,vertexColors:true});
   M.stone=std({map:tex(mkCanvas(256,256,(g,w,h)=>{g.fillStyle='#3a3640';g.fillRect(0,0,w,h);for(let y=0;y<h;y+=32){const off=(y/32)%2?24:0;for(let x=-48;x<w;x+=48){g.fillStyle='rgba('+(Math.random()<.5?'10,8,16':'120,110,130')+','+(.1+Math.random()*.2)+')';g.fillRect(x+off+2,y+2,44,28);}}s4Noise(g,w,h,.2,17,3);}),true),roughness:.9,vertexColors:true});
   return M;}
+/* a real Jersey barrier: sloped concrete profile, len metres long, with a reflector strip and lifting slots */
+let S4JG=null;
+function s4Jersey(x,y,z,len,yaw,col,o){if(!S4JG){const sh=new THREE.Shape();sh.moveTo(-.31,0);sh.lineTo(.31,0);sh.lineTo(.31,.08);sh.lineTo(.17,.32);sh.lineTo(.09,.82);sh.lineTo(-.09,.82);sh.lineTo(-.17,.32);sh.lineTo(-.31,.08);sh.closePath();
+    const g=new THREE.ExtrudeGeometry(sh,{depth:1,bevelEnabled:true,bevelThickness:.02,bevelSize:.015,bevelSegments:1,steps:1});g.translate(0,0,-.5);g.computeVertexNormals();S4JG=g;}
+  const C=col||s4Tint(.84,.82,.78),n=Math.max(1,Math.round(len/3)),seg=len/n,cs=Math.cos(yaw),sn=Math.sin(yaw);
+  for(let i=0;i<n;i++){const t=(i+.5)*seg-len/2,px=x+t*sn,pz=z+t*cs,sh=1-(i%3)*.04;
+    const sy=o&&o.sy||1;s4Geo(s4Bucket(px,pz,'conc'),S4JG,px,y,pz,0,yaw,0,1,sy,seg-.06,s4Tint(C[0]*sh,C[1]*sh,C[2]*sh),.5);
+    if(!(o&&o.plain)){for(const s of[-1,1]){s4Box(s4Bucket(px,pz,o&&o.grok?'cyanV':'yellow'),px+s*.135*cs,y+.6*sy,pz-s*.135*sn,.02,.08,seg*.5,yaw+s*.16*0,1,1,null,s>0?1:2);}
+      s4Box(s4Bucket(px,pz,'dark'),px,y+.06,pz,.64,.1,.3,yaw,1,1,null,1|2);}}}
+/* lumpy concrete chunks for rubble (a few shared shapes, picked at random) */
+const S4ROCK=[];
+function s4Rock(){if(!S4ROCK.length){for(let v=0;v<5;v++){const g=new THREE.IcosahedronGeometry(1,1),p=g.attributes.position,r=rng(31+v*7),m=new Map();
+      for(let i=0;i<p.count;i++){const k=p.getX(i).toFixed(3)+','+p.getY(i).toFixed(3)+','+p.getZ(i).toFixed(3);let f=m.get(k);if(f==null){f=[.72+r()*.5,.7+r()*.45];m.set(k,f);}
+        const y=p.getY(i);p.setXYZ(i,p.getX(i)*f[0],(y<0?y*.45:y*f[1]),p.getZ(i)*f[0]*(.8+.2*v/4));}
+      g.computeVertexNormals();S4ROCK.push(g);}}
+  return S4ROCK[(Math.random()*S4ROCK.length)|0];}

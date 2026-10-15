@@ -50,7 +50,7 @@ function s4Sleepers(dt){const c=S4,k=player,D=c.D;
     if(b.st==='step'||b.st==='stand'||b.st==='wake'){const q=s4At(b.s,b.lat);b.x=q.x;b.z=q.z;b.g.position.set(q.x,s4Floor(q.x,q.z).y,q.z);b.g.rotation.y=q.h+Math.PI;
       b.legs.forEach((l,i)=>{l.rotation.z=Math.sin(b.walk+i*Math.PI/2)*.35;});b.lg.visible=Math.sin(S.t*10)>0;
       /* you hit it */
-      if(Math.abs(ahead)<6&&Math.hypot(k.x-b.x,k.z-b.z)<2.1&&k.y<4){b.dead=true;c.wrecked++;burst(b.x,1.2,b.z,40,[.5,.9,1],12,1.3,.6);burst(b.x,1.2,b.z,20,[1,.7,.3],10,1,.5);SFX.boom();
+      if(Math.abs(ahead)<6&&Math.hypot(k.x-b.x,k.z-b.z)<2.6&&k.y<4){b.dead=true;c.wrecked++;burst(b.x,1.2,b.z,40,[.5,.9,1],12,1.3,.6);burst(b.x,1.2,b.z,20,[1,.7,.3],10,1,.5);SFX.boom();
         /* the battering ram takes it head-on: the bot goes flying and you keep going */
         const fx=Math.sin(k.h),fz=Math.cos(k.h),front=((b.x-k.x)*fx+(b.z-k.z)*fz)>-.3;
         if(c.ram&&front){s4Launch4(b.g,k);k.speed*=.86;cam.shake=Math.max(cam.shake,.45);showMsg(['RAMMED!','BONK!','SMASHED!','OUTTA HERE!'][(Math.random()*4)|0],.9,'good');}
@@ -91,7 +91,7 @@ function s4Throwers(dt){const c=S4,k=player,D=c.D;for(const b of c.thr){if(b.dea
     if(d<62&&d>8&&c.mode==='play'){b.cd-=dt;if(b.cd<=0){b.cd=(2+Math.random()*1.2)/D.fire;const lead=1.3,tx=k.x+k.vx*lead,tz=k.z+k.vz*lead,g=s4Models().scrap.clone(true);g.position.set(b.x,4,b.z);c.G.add(g);c.scrapP.push({g,x0:b.x,y0:4,z0:b.z,tx,tz,ty:s4Floor(tx,tz).y,t:0,T:lead,m:s4Mark(tx,tz,2.4,0xffa040,lead),r:2.4});tone(420,.14,'triangle',.06,900);b.rig.rotation.x=-.4;b.throwT=.3;}}
     if(b.throwT>0){b.throwT-=dt;if(b.throwT<=0)b.rig.rotation.x=0;}
     /* drive into one to knock it over */
-    if(d<2.1&&k.y<4){b.dead=true;if(c.ram)s4Launch4(b.g,k);else b.g.visible=false;c.wrecked++;burst(b.x,1.8,b.z,40,[.5,.9,1],12,1.3,.6);SFX.boom();showMsg('BOT SMASHED!',1,'good');k.speed*=.75;}}}
+    if(d<2.6&&k.y<4){b.dead=true;if(c.ram)s4Launch4(b.g,k);else b.g.visible=false;c.wrecked++;burst(b.x,1.8,b.z,40,[.5,.9,1],12,1.3,.6);SFX.boom();showMsg('BOT SMASHED!',1,'good');k.speed*=.75;}}}
 /* ---------- everything in the air: bombs, bolts, scrap, falling debris ---------- */
 function s4Shots(dt){const c=S4,k=player;
   const land=(x,y,z,r,msg,big)=>{burst(x,y+.5,z,big?60:34,[1,.6,.25],big?16:12,big?1.8:1.3,.6);SMOKE.emit(x,y+1,z,0,3,0,.3,.28,.26,big?7:4,2.5,{grow:3,a:.5});SFX.boom();flashLight.position.set(x,y+2,z);flashLight.intensity=big?9:5;S4.decals&&0;
