@@ -66,7 +66,11 @@ function s4Camp(id){const M=s4Mats(),G=S4.G,lot=S4.lots[id],B=(k,x,z)=>s4Bucket(
   for(let k=0;k<3;k++){const [x,z]=at(-30+k*30+(r()-.5)*6,44+r()*8);S4.throwers.push({x,z,camp:id});}
   {const sg=new THREE.Mesh(new THREE.PlaneGeometry(8,2.2),M.sign('GROK CAMP '+(id==='campA'?'7':id==='campB'?'9':'12'),'#0c0f1e','#ff3a4a',640,170,70));const [x,z]=at(-34,2);sg.position.set(x,3.2,z);sg.rotation.y=Math.atan2(-inward[0],-inward[1]);G.add(sg);
     for(const du of[-3.6,3.6]){const [px,pz]=at(-34+du,2);s4Box(B('grokD',px,pz),px,1.6,pz,.25,3.2,.25,0,1,1);}}
-  if(id==='campC'){const t=tents[3];S4.bottleSpots.push([t[0]+inward[0]*3.6,t[1]+inward[1]*3.6]);}}
+  if(id==='campC'){const t=tents[3];S4.bottleSpots.push([t[0]+inward[0]*3.6,t[1]+inward[1]*3.6]);}
+  /* the bombed-out buildings GROK cleared the lot from: shells along the back of the camp */
+  {const face=Math.atan2(-inward[0],-inward[1]);for(let k=0;k<3;k++){const u=-31+k*31,[fx,fz]=at(u,84);
+    s4Bldg({x:fx,z:fz,w:29,d:11,h:14+r()*20,yaw:face,style:['burnt','brick','conc'][k],damage:'chunk',shop:false,seed:(r()*4294967295)>>>0,zone:'camp',detail:true,billboard:false,turretSpot:false});
+    const [qx,qz]=at(u,89.5);s4ColBox(qx,qz,14.6,5.6,face,{kind:'wall',top:40});}}}
 
 /* ---------- the four-way: a tower that falls across two of the three ways out ---------- */
 function s4Collapse(){const M=s4Mats(),G=S4.G,bx=0,bz=1200;
@@ -106,16 +110,16 @@ function s4BossProps(){const M=s4Mats(),G=S4.G,M3=s3Mats();
   {const g=new THREE.Group(),dark=M3.grokD,metal=M3.steel;const pole=new THREE.Mesh(new THREE.CylinderGeometry(.42,.7,18,14),new THREE.MeshStandardMaterial({color:linC(0x2a3a34),metalness:.7,roughness:.35}));pole.position.y=9;g.add(pole);
     const base=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.4,2.4,14),pole.material);base.position.y=1.2;g.add(base);const arm=new THREE.Mesh(new THREE.BoxGeometry(7,.3,.3),pole.material);arm.position.y=17.4;g.add(arm);
     for(const s of[-1,1]){const lamp=new THREE.Mesh(new THREE.SphereGeometry(.9,16,12),M3.bas(0xffe2a8));lamp.position.set(s*3.4,16.6,0);g.add(lamp);const gl=glow(0xffd090,7);gl.position.copy(lamp.position);g.add(gl);}
-    const crack=new THREE.Mesh(new THREE.TorusGeometry(1.5,.14,8,28),M.add(0xffd23f,.9));crack.rotation.x=Math.PI/2;crack.position.y=.6;g.add(crack);
+    const crack=new THREE.Mesh(new THREE.TorusGeometry(3.8,.26,8,40),M.add(0xffd23f,.9));crack.rotation.x=Math.PI/2;crack.position.y=.3;g.add(crack);
     const q=s4At(s4S(11,430),-14.2);g.position.set(q.x,0,q.z);g.rotation.y=q.h+Math.PI/2;G.add(g);linearize(g);
-    const c=s4Col({x:q.x,z:q.z,r:1.4,kind:'target',top:20});S4.targets.push({id:'lamp',g,c,s:s4S(11,430),fall:-1,dir:-1,len:18,crack,done:false,mark:null});}
+    const c=s4Col({x:q.x,z:q.z,r:2.8,kind:'target',top:20});S4.targets.push({id:'lamp',g,c,s:s4S(11,430),fall:-1,dir:-1,len:18,crack,done:false,mark:null});}
   /* 2: billboard tower on the left sidewalk */
   {const g=new THREE.Group(),steel=M3.steel;for(const [a,b] of[[-1.6,-1.6],[1.6,-1.6],[-1.6,1.6],[1.6,1.6]]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.3,16,.3),steel);leg.position.set(a,8,b);g.add(leg);}
     for(let y=2;y<16;y+=3){const ring=new THREE.Mesh(new THREE.BoxGeometry(3.5,.15,3.5),steel);ring.position.y=y;g.add(ring);}
     const bd=new THREE.Mesh(new THREE.PlaneGeometry(14,6),M.sign('OBEY GROK','#0c0f1e','#ff3a4a',768,330,140));bd.position.set(0,19,-.3);bd.rotation.y=Math.PI;g.add(bd);const back=new THREE.Mesh(new THREE.BoxGeometry(14.4,6.4,.3),M3.grokD);back.position.set(0,19,0);g.add(back);
-    const crack=new THREE.Mesh(new THREE.TorusGeometry(1.4,.14,8,28),M.add(0xffd23f,.9));crack.rotation.x=Math.PI/2;crack.position.set(-1.6,.6,-1.6);g.add(crack);
+    const crack=new THREE.Mesh(new THREE.TorusGeometry(4,.26,8,40),M.add(0xffd23f,.9));crack.rotation.x=Math.PI/2;crack.position.set(-1.6,.3,-1.6);g.add(crack);
     const q=s4At(s4S(11,790),14.4);g.position.set(q.x,0,q.z);g.rotation.y=q.h-Math.PI/2;G.add(g);linearize(g);
-    const c=s4Col({x:q.x,z:q.z,r:2.6,kind:'target',top:22});S4.targets.push({id:'board',g,c,s:s4S(11,790),fall:-1,dir:1,len:22,crack,done:false});}
+    const c=s4Col({x:q.x,z:q.z,r:3.4,kind:'target',top:22});S4.targets.push({id:'board',g,c,s:s4S(11,790),fall:-1,dir:1,len:22,crack,done:false});}
   /* 3: the overpass over Grand Avenue's second half (z=2640), held up by a cracked pillar in the middle */
   {const z=2640,y0=10,x=840,parts=[];const mk=(xa,xb)=>{const g=new THREE.Group(),w=xb-xa,B=s4Bk();s4Box(B,0,0,0,w,1.8,18,0,4,4,[.7,.68,.64]);s4Box(B,0,1.5,8.6,w,1.2,.6,0,4,4,[.78,.76,.72]);s4Box(B,0,1.5,-8.6,w,1.2,.6,0,4,4,[.78,.76,.72]);
       const top=s4Bk();s4Box(top,0,.92,0,w,.02,17,0,16,16,null,4);const m=s4BkMesh(B,M.conc),t=s4BkMesh(top,M.deck);m.castShadow=m.receiveShadow=true;g.add(m,t);g.position.set((xa+xb)/2,y0+.9,z);G.add(g);parts.push(g);return g;};
@@ -123,9 +127,9 @@ function s4BossProps(){const M=s4Mats(),G=S4.G,M3=s3Mats();
     for(const px of[740,790,890,940]){const B=s4Bucket(px,z,'conc');s4Box(B,px,y0/2,z,2.2,y0,2.2,0,4,4,s4Tint(.66,.64,.6),63);s4ColBox(px,z,1.2,1.2,0,{kind:'pillar',top:y0});}
     const pil=new THREE.Group();const pm=new THREE.Mesh(new THREE.CylinderGeometry(1.4,1.6,y0,16),M.std({color:linC(0x9a948a),roughness:.9}));pm.position.y=y0/2;pil.add(pm);
     const cm=M.std({color:linC(0xffd23f),emissive:linC(0xff9a20),emissiveIntensity:1.6,roughness:.3});for(let k=0;k<8;k++){const s=new THREE.Mesh(new THREE.BoxGeometry(.1,1+Math.random()*2.4,.12),cm);const a=Math.random()*6.28;s.position.set(Math.cos(a)*1.52,1+Math.random()*6,Math.sin(a)*1.52);s.rotation.set(0,-a,(Math.random()-.5)*1.4);pil.add(s);}
-    const crack=new THREE.Mesh(new THREE.TorusGeometry(2.3,.16,8,30),M.add(0xffd23f,.9));crack.rotation.x=Math.PI/2;crack.position.y=.5;pil.add(crack);pil.position.set(x,0,z);G.add(pil);linearize(pil);
+    const crack=new THREE.Mesh(new THREE.TorusGeometry(4.2,.28,8,40),M.add(0xffd23f,.9));crack.rotation.x=Math.PI/2;crack.position.y=.3;pil.add(crack);pil.position.set(x,0,z);G.add(pil);linearize(pil);
     const sg=new THREE.Mesh(new THREE.PlaneGeometry(12,2),M.sign('GROK EXPRESSWAY','#1e6a3a','#fffaf0',768,128,64));sg.position.set(x,y0+3.6,z-9.2);sg.rotation.y=Math.PI;mid.add(sg);sg.position.set(0,2.7,-9.2);
-    const c=s4Col({x,z,r:1.9,kind:'target',top:y0});S4.targets.push({id:'pillar',g:pil,c,s:s4S(13,480),fall:-1,crack,done:false,deck:mid,left,right});
+    const c=s4Col({x,z,r:3,kind:'target',top:y0});S4.targets.push({id:'pillar',g:pil,c,s:s4S(13,480),fall:-1,crack,done:false,deck:mid,left,right});
     S4.dark.push({x0:823,x1:857,z0:2631,z1:2649,a:.35});}}
 
 /* ---------- the plaza and GROK's castle ---------- */

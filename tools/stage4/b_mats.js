@@ -127,6 +127,7 @@ function s4Mats(){if(S4MAT)return S4MAT;const M3=s3Mats(),std=M3.std,C=c=>linC(c
   M.roof=std({map:tex(mkCanvas(256,256,(g,w,h)=>{g.fillStyle='#5e5a56';g.fillRect(0,0,w,h);s4Noise(g,w,h,.25,4,2);g.strokeStyle='rgba(20,20,20,.35)';g.lineWidth=3;for(let i=0;i<6;i++){g.beginPath();g.moveTo(Math.random()*w,0);g.lineTo(Math.random()*w,h);g.stroke();}}),true),roughness:.95,vertexColors:true});
   const concT=tex(mkCanvas(256,256,(g,w,h)=>{g.fillStyle='#b4aea4';g.fillRect(0,0,w,h);s4Noise(g,w,h,.16,9,3);g.strokeStyle='rgba(60,50,40,.25)';g.lineWidth=1.5;const r=rng(5);for(let i=0;i<10;i++){let x=r()*w,y=r()*h;g.beginPath();g.moveTo(x,y);for(let k=0;k<6;k++){x+=(r()-.5)*40;y+=(r()-.5)*40;g.lineTo(x,y);}g.stroke();}}),true);
   M.conc=std({map:concT,roughness:.92,vertexColors:true});
+  M.stripe=std({map:tex(mkCanvas(256,64,(g,w,h)=>{g.fillStyle='#fffaf0';g.fillRect(0,0,w,h);g.fillStyle='#ff5a14';for(let x=-h;x<w+h;x+=48){g.beginPath();g.moveTo(x,h);g.lineTo(x+24,h);g.lineTo(x+24+h,0);g.lineTo(x+h,0);g.fill();}}),true),roughness:.45,emissive:linC(0x2a1000),vertexColors:true});
   M.metal=std({color:C(0x7c838e),metalness:.75,roughness:.38,vertexColors:true});M.dark=std({color:C(0x24262c),metalness:.4,roughness:.55,vertexColors:true});
   M.rust=std({color:C(0x7a4228),metalness:.35,roughness:.82,vertexColors:true});M.wood=std({color:C(0x7a5634),roughness:.88,vertexColors:true});
   M.rubble=std({map:concT,roughness:.96,vertexColors:true,flatShading:true});
@@ -185,3 +186,20 @@ function s4Rock(){if(!S4ROCK.length){for(let v=0;v<5;v++){const g=new THREE.Icos
         const y=p.getY(i);p.setXYZ(i,p.getX(i)*f[0],(y<0?y*.45:y*f[1]),p.getZ(i)*f[0]*(.8+.2*v/4));}
       g.computeVertexNormals();S4ROCK.push(g);}}
   return S4ROCK[(Math.random()*S4ROCK.length)|0];}
+/* take something out of the scene, whichever group it ended up in (statics are moved into their chunk) */
+function s4Rm(o){if(o&&o.parent)o.parent.remove(o);}
+
+/* a police road block: striped barricades with amber lamps, cones in the gaps, sometimes a police car */
+function s4Police(x,y,z,len,yaw,o){const cs=Math.cos(yaw),sn=Math.sin(yaw),n=Math.max(1,Math.round(len/4.2)),step=len/n;
+  for(let i=0;i<n;i++){const t=(i+.5)*step-len/2,px=x+t*sn,pz=z+t*cs,jy=yaw+(((i*7)%3)-1)*.06;
+    /* Type III barricade: two posts, three striped boards, a lamp on top */
+    for(const s of[-1,1]){const ex=px+s*1.2*Math.sin(jy+Math.PI/2)*0+s*1.2*Math.sin(jy),ez=pz+s*1.2*Math.cos(jy);
+      s4Box(s4Bucket(ex,ez,'metal'),ex,.78,ez,.07,1.56,.07,jy,1,1,s4Tint(.95,.95,.95));s4Box(s4Bucket(ex,ez,'dark'),ex,.03,ez,.7,.06,.14,jy+Math.PI/2,1,1,null);}
+    for(const by of[.55,.95,1.35]){s4Box(s4Bucket(px,pz,'stripe'),px,y+by,pz,.04,.24,2.7,jy,2.7,1,null);}
+    const lx=px+1.2*Math.sin(jy),lz=pz+1.2*Math.cos(jy);s4Box(s4Bucket(lx,lz,'lampOn'),lx,y+1.72,lz,.2,.2,.2,jy,1,1,s4Tint(1,.62,.1));S4.blinkers.push([lx,y+1.75,lz,1.4,2]);
+    if(i<n-1){const t2=t+step/2;S4.cones.push([x+t2*sn,y,z+t2*cs]);}}
+  /* a few loose cones in front */for(let k=0;k<4;k++){const t=(Math.random()-.5)*len*.9,f=1.6+Math.random()*1.4;S4.cones.push([x+t*sn+f*cs*(o&&o.side||1),y,z+t*cs-f*sn*(o&&o.side||1)]);}
+  if(o&&o.car){const t=len/2-2.6,f=-5.5,px=x+t*sn-f*cs,pz=z+t*cs+f*sn;s4Car('sedan',px,pz,yaw+.35,{col:3,collide:false,fire:false});
+    const lbx=px,lbz=pz,ly=y+.36*.9+.82+.6+.12;s4Box(s4Bucket(lbx,lbz,'redV'),lbx+Math.cos(yaw+.35)*.35,ly,lbz-Math.sin(yaw+.35)*.35,.6,.14,.25,yaw+.35,1,1,s4Tint(1,.1,.15));s4Box(s4Bucket(lbx,lbz,'cyanV'),lbx-Math.cos(yaw+.35)*.35,ly,lbz+Math.sin(yaw+.35)*.35,.6,.14,.25,yaw+.35,1,1,s4Tint(.2,.4,1));
+    S4.blinkers.push([lbx,ly+.2,lbz,2.2,2]);
+    s4Box(s4Bucket(px,pz,'dark'),px,y+.36*.9+.45,pz,.03,.32,3.2,yaw+.35,1,1,s4Tint(.05,.05,.08),1|2);}}

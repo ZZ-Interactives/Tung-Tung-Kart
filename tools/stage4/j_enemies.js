@@ -11,7 +11,7 @@ function s4Chase(n,msg){const c=S4;if(c.boss&&c.boss.mode==='chase'&&n>2)n=2;for
   if(msg){setBanner(msg,'warn');setTimeout(()=>{if(S4&&$('banner').textContent===msg)setBanner('');},1600);}
   for(let k=0;k<3;k++){tone(760,.14,'square',.04,null,k*.3);tone(560,.14,'square',.04,null,k*.3+.15);}}
 const S4TP={x:0,y:0,z:0,h:0,L:0},S4TP2={x:0,y:0,z:0,h:0,L:0};
-function s4RunnerBoom(r,why){const c=S4,p=r.g.position;r.dead=true;c.G.remove(r.g);c.wrecked++;burst(p.x,p.y+1,p.z,46,[1,.55,.2],14,1.6,.7);burst(p.x,p.y+1,p.z,24,[.4,.9,1],10,1.1,.5);SMOKE.emit(p.x,p.y+1.5,p.z,0,3,0,.25,.24,.24,5,3,{grow:3,a:.5});
+function s4RunnerBoom(r,why){const c=S4,p=r.g.position;r.dead=true;s4Rm(r.g);c.wrecked++;burst(p.x,p.y+1,p.z,46,[1,.55,.2],14,1.6,.7);burst(p.x,p.y+1,p.z,24,[.4,.9,1],10,1.1,.5);SMOKE.emit(p.x,p.y+1.5,p.z,0,3,0,.25,.24,.24,5,3,{grow:3,a:.5});
   SFX.boom();flashLight.position.set(p.x,p.y+2,p.z);flashLight.intensity=6;const T=s4Models();
   for(let k=0;k<5;k++){const m=new THREE.Mesh(new THREE.BoxGeometry(.4+Math.random()*.5,.2,.4+Math.random()*.4),k%2?T.gm:T.gd);m.position.set(p.x,p.y+1,p.z);c.G.add(m);c.deb.push({m,v:new V3((Math.random()-.5)*14,6+Math.random()*7,(Math.random()-.5)*14),r:new V3(Math.random()*9,Math.random()*9,Math.random()*9),t:0,y0:s4Floor(p.x,p.z).y,life:2.6,own:true});}
   if(why&&Math.random()<.7){const lines={corner:['WIPEOUT!','BOT CRASHED THE CORNER!'],nm:['BOT HIT THE WRECK!','KABOOM!'],water:['SHORT CIRCUIT!'],boss:['SQUASHED BY THE BOSS!'],fall:['CRUSHED!']}[why]||['BOT DOWN!'];showMsg(lines[(Math.random()*lines.length)|0],1.1,'good');}}
@@ -19,7 +19,7 @@ function s4Runners(dt){const c=S4,k=player,D=c.D,top=cc().top,vp=Math.abs(k.spee
   for(const r of c.run){if(r.dead)continue;
     /* how fast it goes: a bit slower than you at full speed, faster when it is far behind */
     let vt=top*D.chase;if(r.d>48)vt+=9;if(r.d<14)vt=Math.min(vt,vp+3.5);r.v+=(vt-r.v)*Math.min(1,dt*1.8);r.d+=(vp-r.v)*dt;
-    if(r.d>120){r.dead=true;c.G.remove(r.g);showMsg('Lost one!',.9,'good');continue;}
+    if(r.d>120){r.dead=true;s4Rm(r.g);showMsg('Lost one!',.9,'good');continue;}
     const p=s4TrailAt(Math.max(.5,r.d),S4TP);if(!p){r.g.visible=false;continue;}r.g.visible=true;
     /* a fast corner or a near miss can wreck it */
     const q=s4Near(p.x,p.z,r.qi!=null?r.qi:-1);r.qi=q.i;r.s=q.s;
@@ -61,7 +61,7 @@ function s4Flyers(dt){const c=S4,k=player,D=c.D;
   for(const f of c.fly){if(f.dead)continue;f.t+=dt;const fx=Math.sin(c.ph),fz=Math.cos(c.ph);
     let tx,ty,tz;if(f.st==='in'){const u=Math.min(1,f.t/2.2);tx=k.x+fx*lerp(-30,f.lead,u)-fz*f.side;tz=k.z+fz*lerp(-30,f.lead,u)+fx*f.side;ty=k.y+lerp(22,13,u);if(u>=1)f.st='bomb';}
     else if(f.st==='bomb'){tx=k.x+fx*f.lead-fz*f.side;tz=k.z+fz*f.lead+fx*f.side;ty=k.y+13;f.cd-=dt;if(f.cd<=0&&f.n>0){f.n--;f.cd=(1.5+Math.random()*.8)/D.fire;s4Bomb(f);}if(f.n<=0&&f.cd<-1)f.st='out';}
-    else{tx=f.g.position.x+fx*60;tz=f.g.position.z+fz*60;ty=f.g.position.y+20;if(f.t>30||f.g.position.y>k.y+60){f.dead=true;c.G.remove(f.g);continue;}}
+    else{tx=f.g.position.x+fx*60;tz=f.g.position.z+fz*60;ty=f.g.position.y+20;if(f.t>30||f.g.position.y>k.y+60){f.dead=true;s4Rm(f.g);continue;}}
     const p=f.g.position,a=1-Math.exp(-dt*(f.st==='out'?1:2.6));p.x+=(tx-p.x)*a;p.y+=(ty-p.y)*a;p.z+=(tz-p.z)*a;f.g.rotation.y=c.ph+Math.PI*0;f.g.rotation.z=Math.sin(f.t*2)*.08;
     f.g.traverse(o=>{if(o.userData.rotor)o.rotation.z+=dt*40;else if(o.userData.blink)o.visible=Math.sin(S.t*9)>0;});}
   c.fly=c.fly.filter(f=>!f.dead);}
@@ -97,11 +97,11 @@ function s4Shots(dt){const c=S4,k=player;
   const land=(x,y,z,r,msg,big)=>{burst(x,y+.5,z,big?60:34,[1,.6,.25],big?16:12,big?1.8:1.3,.6);SMOKE.emit(x,y+1,z,0,3,0,.3,.28,.26,big?7:4,2.5,{grow:3,a:.5});SFX.boom();flashLight.position.set(x,y+2,z);flashLight.intensity=big?9:5;S4.decals&&0;
     if(Math.hypot(k.x-x,k.z-z)<r&&k.y<y+3)s4Hurt(1,msg);c.shake=Math.max(c.shake,Math.max(0,1-Math.hypot(k.x-x,k.z-z)/40)*.8);
     for(const r2 of c.run){if(!r2.dead&&Math.hypot(r2.g.position.x-x,r2.g.position.z-z)<r+1)s4RunnerBoom(r2,'');}};
-  for(const b of c.bombs){b.t+=dt;const u=Math.min(1,b.t/b.T);b.g.position.set(lerp(b.x0,b.tx,u),lerp(b.y0,b.ty,u*u),lerp(b.z0,b.tz,u));b.g.rotation.x+=dt*4;if(u>=1){b.done=true;c.G.remove(b.g);b.m.m.visible=false;land(b.tx,b.ty,b.tz,b.r,'BOMB!');}}
+  for(const b of c.bombs){b.t+=dt;const u=Math.min(1,b.t/b.T);b.g.position.set(lerp(b.x0,b.tx,u),lerp(b.y0,b.ty,u*u),lerp(b.z0,b.tz,u));b.g.rotation.x+=dt*4;if(u>=1){b.done=true;s4Rm(b.g);b.m.m.visible=false;land(b.tx,b.ty,b.tz,b.r,'BOMB!');}}
   c.bombs=c.bombs.filter(b=>!b.done);
-  for(const s of c.scrapP){s.t+=dt;const u=Math.min(1,s.t/s.T);s.g.position.set(lerp(s.x0,s.tx,u),lerp(s.y0,s.ty,u)+Math.sin(u*Math.PI)*9,lerp(s.z0,s.tz,u));s.g.rotation.x+=dt*9;s.g.rotation.z+=dt*7;if(u>=1){s.done=true;c.G.remove(s.g);s.m.m.visible=false;burst(s.tx,s.ty+.5,s.tz,18,[.8,.6,.4],9,1,.5);SFX.bump();if(Math.hypot(k.x-s.tx,k.z-s.tz)<s.r&&k.y<s.ty+3)s4Hurt(1,'SCRAP!');}}
+  for(const s of c.scrapP){s.t+=dt;const u=Math.min(1,s.t/s.T);s.g.position.set(lerp(s.x0,s.tx,u),lerp(s.y0,s.ty,u)+Math.sin(u*Math.PI)*9,lerp(s.z0,s.tz,u));s.g.rotation.x+=dt*9;s.g.rotation.z+=dt*7;if(u>=1){s.done=true;s4Rm(s.g);s.m.m.visible=false;burst(s.tx,s.ty+.5,s.tz,18,[.8,.6,.4],9,1,.5);SFX.bump();if(Math.hypot(k.x-s.tx,k.z-s.tz)<s.r&&k.y<s.ty+3)s4Hurt(1,'SCRAP!');}}
   c.scrapP=c.scrapP.filter(s=>!s.done);
-  for(const b of c.bolts){b.t+=dt;const u=Math.min(1,b.t/b.T);b.g.position.lerpVectors(b.a,b.b,u);if(u>=1){b.done=true;c.G.remove(b.g);burst(b.b.x,b.b.y+.2,b.b.z,b.dud?16:24,[1,.4,.5],b.dud?8:10,b.dud?.7:1,.4);
+  for(const b of c.bolts){b.t+=dt;const u=Math.min(1,b.t/b.T);b.g.position.lerpVectors(b.a,b.b,u);if(u>=1){b.done=true;s4Rm(b.g);burst(b.b.x,b.b.y+.2,b.b.z,b.dud?16:24,[1,.4,.5],b.dud?8:10,b.dud?.7:1,.4);
       if(b.dud){S4.scorchN=(S4.scorchN||0)+1;}else{SFX.bump();if(Math.hypot(k.x-b.b.x,k.z-b.b.z)<b.r&&k.y<b.b.y+3)s4Hurt(1,'LASER!');}}}
   c.bolts=c.bolts.filter(b=>!b.done);
   for(const m of c.marks){if(!m.m.visible)continue;m.t+=dt;const u=m.t/m.life;m.m.material.opacity=.45+.4*Math.sin(S.t*18);m.dot.material.opacity=.1+.25*Math.min(1,u);m.m.scale.setScalar(m.r*(1.25-.25*Math.min(1,u)));if(m.t>m.life+.1)m.m.visible=false;}}

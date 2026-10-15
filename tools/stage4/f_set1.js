@@ -109,7 +109,7 @@ function s4Barricades(){const M=s4Mats(),G=S4.G,B=(k,x,z)=>s4Bucket(x,z,k);
       for(let k=0;k<3;k++){const [x,z]=at((r()-.5)*18,2+r()*3);s4Geo(B('conc',x,z),new THREE.BoxGeometry(6+r()*4,.5,3),x,1.5+r()*2,z,(r()-.5)*.8,yaw+r(),(r()-.5)*.8,1,1,1,s4Tint(.6,.58,.55));}}
     else if(type<.7){/* wreck pile */const kinds=['sedan','hatch','suv','van'];for(let k=0;k<4;k++){const [x,z]=at(-9+k*6+(r()-.5)*2,1+r()*2);s4Car(kinds[(r()*4)|0],x,z,yaw+Math.PI/2+(r()-.5)*.8,{burnt:r()<.5,collide:false,fire:r()<.3,crushed:r()<.5,roll:(r()-.5)*.4});}
       const [x,z]=at((r()-.5)*6,2.5);s4Car('sedan',x,z,yaw+r()*3,{y:1.9,roll:(r()-.5)*.7,collide:false,burnt:true,fire:false});}
-    else{/* GROK checkpoint wall */{const [x,z]=at(0,.5);s4Jersey(x,0,z,25,yaw+Math.PI/2,s4Tint(.82,.8,.76),{grok:true,sy:1.25});}
+    else{/* GROK checkpoint wall */{const [x,z]=at(0,.5);s4Police(x,0,z,24,yaw+Math.PI/2,{car:r()<.5,side:-1});}
       const [fx,fz]=at(0,2);const fb=B('fence',fx,fz);const a=at(-12.5,2),b=at(12.5,2);s4Quad(fb,[a[0],0,a[1]],[b[0],0,b[1]],[b[0],4,b[1]],[a[0],4,a[1]],[0,0],[25/1.6,0],[25/1.6,4/1.6],[0,4/1.6]);
       for(let k=-12;k<=12;k+=4){const [x,z]=at(k,2);s4Box(B('grokD',x,z),x,2.1,z,.25,4.2,.25,yaw,1,1);}
       const sg=new THREE.Mesh(new THREE.PlaneGeometry(6,1.6),M.sign('GROK ZONE\nKEEP OUT','#0c0f1e','#ff3a4a',512,140,48));const [sx,sz]=at(0,1.6);sg.position.set(sx,3,sz);sg.rotation.y=yaw+Math.PI;G.add(sg);

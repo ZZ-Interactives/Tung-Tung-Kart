@@ -2,7 +2,7 @@
 /* ---------- HUD ---------- */
 function s4HudInit(){if(!$('s4Css')){const st=document.createElement('style');st.id='s4Css';st.textContent=`
 #s4Hud{position:fixed;inset:0;pointer-events:none;z-index:6;font-family:Bungee,Impact,sans-serif;transition:opacity .6s}#s4Hud.fade{opacity:0}
-#s4Mirror{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;width:min(19vw,230px);aspect-ratio:3/1;border-radius:10px;border:3px solid #17142e;box-shadow:0 0 0 2px #fffaf0,0 4px 0 2px #17142e;overflow:hidden;transition:box-shadow .2s}
+#s4Mirror{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;width:min(30vw,380px);aspect-ratio:3/1;border-radius:10px;border:3px solid #17142e;box-shadow:0 0 0 2px #fffaf0,0 4px 0 2px #17142e;overflow:hidden;transition:box-shadow .2s}
 #s4Mirror::after{content:'';position:absolute;inset:0;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,0) 40%);}
 #s4Mirror.danger{box-shadow:0 0 0 3px #ff3a4a,0 6px 0 3px #17142e,0 0 28px 6px rgba(255,40,60,.7)}
 #s4MirL{display:none}
@@ -12,14 +12,16 @@ function s4HudInit(){if(!$('s4Css')){const st=document.createElement('style');st
 #s4Route .dt{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#17142e;border:2px solid #fffaf0;transition:background .3s}#s4Route .dt.done{background:#ffd23f}#s4Route .dt.end{width:16px;height:16px;margin:-8px 0 0 -8px;background:#ff3a4a}
 #s4Route b{position:absolute;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#c98a4e;border:3px solid #fffaf0;box-shadow:0 2px 0 #17142e;z-index:2}
 #s4RouteN{display:block;margin-top:10px;font-size:13px;color:#fffaf0;text-shadow:0 2px 0 #17142e,0 0 6px rgba(0,0,0,.6);letter-spacing:.04em;white-space:nowrap}#s4RouteN small{font-size:10px;color:#ffd23f;margin-right:6px}
-#s4Count{position:absolute;right:14px;top:calc(14px + min(6.33vw,76.7px) + 14px);display:flex;flex-direction:column;align-items:flex-end;gap:6px}#s4Count span{background:rgba(23,20,46,.78);color:#fffaf0;border:3px solid #17142e;border-radius:10px;padding:3px 10px;font-size:15px;box-shadow:0 3px 0 #17142e}#s4Count span i{font-style:normal;color:#5fd8ff}#s4Count span u{text-decoration:none;color:#ff6a7a}
+#s4Count{position:absolute;right:14px;top:calc(14px + min(10vw,126.7px) + 14px);display:flex;flex-direction:column;align-items:flex-end;gap:6px}#s4Count span{background:rgba(23,20,46,.78);color:#fffaf0;border:3px solid #17142e;border-radius:10px;padding:3px 10px;font-size:15px;box-shadow:0 3px 0 #17142e}#s4Count span i{font-style:normal;color:#5fd8ff}#s4Count span u{text-decoration:none;color:#ff6a7a}
 #s4Zone{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);font-size:min(6vw,54px);color:#fffaf0;text-shadow:0 5px 0 #17142e,0 0 24px rgba(0,0,0,.5);opacity:0;white-space:nowrap;letter-spacing:.04em}
 #s4Zone.on{animation:s4z 3.2s ease forwards}@keyframes s4z{0%{opacity:0;transform:translate(-50%,-30%) scale(.9)}12%{opacity:1;transform:translate(-50%,-50%) scale(1)}78%{opacity:1}100%{opacity:0;transform:translate(-50%,-60%)}}
 #s4Danger{position:absolute;left:0;right:0;bottom:0;height:26vh;background:linear-gradient(0deg,rgba(255,30,50,.42),rgba(255,30,50,0));opacity:0;transition:opacity .2s}
 #s4Danger.on{opacity:1;animation:s4p .5s ease-in-out infinite alternate}@keyframes s4p{from{opacity:.55}to{opacity:1}}
 #s4Chev{position:absolute;left:50%;bottom:5vh;transform:translateX(-50%);display:flex;gap:6px;opacity:0}#s4Chev.on{opacity:1}#s4Chev i{width:22px;height:14px;background:#ff3a4a;clip-path:polygon(0 0,50% 70%,100% 0,100% 30%,50% 100%,0 30%);animation:s4c .6s infinite}#s4Chev i:nth-child(2){animation-delay:.12s}#s4Chev i:nth-child(3){animation-delay:.24s}@keyframes s4c{0%,100%{opacity:.3}50%{opacity:1}}
-body.city #timer{display:none!important}body.city #sBoss{top:calc(146px + env(safe-area-inset-top,0px))}
-@media (max-width:700px){#s4Route{width:38vw;top:calc(var(--u)*10.2 + 40px)}#s4Mirror{width:30vw}#s4Count{top:calc(14px + 10vw + 14px)}#s4Turn i{width:48px;height:48px}}
+body.city #timer{display:none!important}body.city #sBoss{top:auto!important;bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+body.city #banner{font-size:calc(var(--u)*4.6);top:23%}body.city #banner.big{font-size:calc(var(--u)*4.2)}body.city #banner small{font-size:.5em}
+#hud.cine4{opacity:0;transition:opacity .3s}body.city #msg{font-size:calc(var(--u)*2.1);padding:4px 14px}
+@media (max-width:700px){#s4Route{width:38vw;top:calc(var(--u)*10.2 + 40px)}#s4Mirror{width:40vw}#s4Count{top:calc(14px + 13.3vw + 14px)}#s4Turn i{width:48px;height:48px}}
 `;document.head.appendChild(st);}
   let h=$('s4Hud');if(!h){h=document.createElement('div');h.id='s4Hud';h.innerHTML='<div id="s4Danger"></div><div id="s4Mirror"></div>'+
     '<div id="s4Route"><div class="ln" id="s4RouteLn"><div class="fl" id="s4RouteF"></div><b id="s4RouteB"></b></div><span id="s4RouteN"></span></div><div id="s4Count"><span>💧 <i id="s4Bot">0</i>/5</span><span>🤖 <u id="s4Wr">0</u> wrecked</span></div><div id="s4Zone"></div><div id="s4Chev"><i></i><i></i><i></i></div>';document.body.appendChild(h);}

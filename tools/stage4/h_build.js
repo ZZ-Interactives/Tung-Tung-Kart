@@ -25,7 +25,7 @@ function s4SidewalkRun(){const s0=s4S(4,150),s1=s4S(4,232);
   {const q=s4At((s0+s1)/2,-2);s4Car('bus',q.x,q.z,q.h+.08,{burnt:true,fire:true,collide:false});}
   /* concrete barriers fill the gaps so the road is fully shut */
   for(let s=s0-4;s<s1+4;s+=3){const q=s4At(s,0);s4ColBox(q.x,q.z,7.9,1.6,q.h,{kind:'wreck',top:3});}
-  for(const s of[s0-6,s1+6]){const q=s4At(s,0);s4Jersey(q.x,0,q.z,16.5,q.h+Math.PI/2,s4Tint(.85,.82,.78),{sy:1.25});}
+  for(const s of[s0-6,s1+6]){const q=s4At(s,0);s4Police(q.x,0,q.z,15.5,q.h+Math.PI/2,{car:s<s0,side:s<s0?-1:1});}
   /* left sidewalk: rubble and a fallen pole */
   for(let s=s0-6;s<s1+6;s+=4){const q=s4At(s,-10.4);s4Geo(s4Bucket(q.x,q.z,'rubble'),s4Rock(),q.x,.8,q.z,Math.random()*3,Math.random()*3,0,1.5,1,1.6,s4Tint(.45,.42,.4));s4Col({x:q.x,z:q.z,r:1.6,kind:'rubble',top:2});}
   /* trash cans on the right sidewalk */
@@ -49,7 +49,10 @@ function s4Build(){const M=s4Mats(),G=S4.G;
   /* bake the chunks */
   for(const ch of S4.chunks.values()){const g=new THREE.Group();for(const k in ch.bk){const mat=s4MatOf(k);if(!mat){console.warn('s4 missing material',k);continue;}const m=s4BkMesh(ch.bk[k],mat,true);if(!m)continue;
       const flat=/^(road|blvd|asph|walk|curb|paint|yellow|manhole|scorch|puddle|tile|paver|dirt|deck)$/.test(k);m.castShadow=!flat&&!/^(signs|lamp|sig|cyanV|redV|fence|banner)/.test(k);m.receiveShadow=true;if(k==='scorch'||k==='puddle'){m.renderOrder=1;}m.userData.bk=1;g.add(m);}
-    ch.bk=null;ch.g=g;G.add(g);const q=s4Near(ch.cx,ch.cz,-1,{});ch.sMax=q.s+200;}
+    ch.bk=null;ch.g=g;G.add(g);ch.sMax=-1e9;}
+  /* the furthest point along the route that passes anywhere near each chunk: a chunk is only ever freed once you are past all of it */
+  for(let s=0;s<=S4.path.L;s+=6){const p=s4At(s,0),gx=Math.floor(p.x/240),gz=Math.floor(p.z/240);for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){const ch=S4.chunks.get((gx+dx)+','+(gz+dz));if(ch&&Math.hypot(ch.cx-p.x,ch.cz-p.z)<460&&s>ch.sMax)ch.sMax=s;}}
+  for(const ch of S4.chunks.values())if(ch.sMax<-1e8)ch.sMax=1e9;/* never near the route: keep (it is far scenery) */
   /* blinking lights and fires get sprites, grouped by chunk so far ones hide */
   for(const [x,y,z,s,b] of S4.blinkers){const gl=glow(0xff3040,s);gl.position.set(x,y,z);gl.userData.blink=b;s4ChunkAdd(gl,x,z);S4.blinkS.push(gl);}
   for(const f of S4.fires){const gl=glow(f.wall?0xff7a20:0xff8a30,(f.s||1)*4.2);gl.material.opacity=.55;gl.position.set(f.x,f.y+.6,f.z);if(f.tower)S4.collapse.piv.attach(gl);else s4ChunkAdd(gl,f.x,f.z);f.gl=gl;f.ph=Math.random()*6;}

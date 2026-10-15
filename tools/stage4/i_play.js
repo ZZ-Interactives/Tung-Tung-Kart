@@ -66,7 +66,7 @@ function s4FrameIn(dt,rawDt){const c=S4;if(!c)return;
   if(sky)sky.position.copy(camera.position);if(c.back){c.back.position.x=camera.position.x;c.back.position.z=camera.position.z;}
   if(AU.eng){const k=player,e=AU.eng,t=AU.ctx.currentTime,sp=Math.abs(k.speed),f=55+sp*3.4+(k.boostT>0?30:0)+(k.drift.on?12:0);e.o1.frequency.setTargetAtTime(f,t,.05);e.o2.frequency.setTargetAtTime(f,t,.05);e.f.frequency.setTargetAtTime(400+sp*40,t,.08);e.gn.gain.setTargetAtTime(S.mode==='city'?.04+Math.min(.035,sp*.001):0,t,.1);}
   if(S.mode==='city'&&SET.gfx==='auto')dynRes(rawDt);}
-function s4Tick(dt,realDt){const c=S4,k=player,D=c.D;c.T+=dt;STORY.missionTime=c.T;if(c.inv>0)c.inv-=dt;
+function s4Tick(dt,realDt){const c=S4,k=player,D=c.D;if(c.bossIntro){s4BossIntroTick(realDt);return;}c.T+=dt;STORY.missionTime=c.T;if(c.inv>0)c.inv-=dt;
   const steps=Math.min(8,Math.max(1,Math.ceil(dt*120-1e-6))),h=dt/steps;
   for(let i=0;i<steps;i++){const ctl=k.lock?{steer:0,gas:0,brake:1,drift:false}:playerControl(k);stepKart(k,ctl,h);
     if(!k.air){const fx=Math.sin(k.h),fz=Math.cos(k.h),a=s4Floor(k.x+fx*1.3,k.z+fz*1.3).y,b=s4Floor(k.x-fx*1.3,k.z-fz*1.3).y,sl=(a-b)/2.6;k.fdSl=Math.abs(sl)>.3?0:sl;k.speed-=GRAV*.5*clamp(k.fdSl,-.6,.9)*h;}
@@ -125,7 +125,7 @@ function s4Break(b,k){const c=S4;b.alive=false;for(const im of b.ims){im.setMatr
   if(Math.random()<b.def.heart*(c.hp<c.max?1.6:.6))s4Heart(b.x+Math.sin(k.h)*6,b.z+Math.cos(k.h)*6,true);}
 function s4Pickups(k,dt){const c=S4;
   for(let i=c.hearts.length-1;i>=0;i--){const p=c.hearts[i];p.t+=dt;p.pop=Math.min(1,p.pop+dt*3);p.g.position.y=p.y+1.4+Math.sin(S.t*3+p.ph)*.25;p.g.rotation.y+=dt*2.4;p.g.scale.setScalar(1.3*K4ease(p.pop));
-    if(Math.hypot(k.x-p.x,k.z-p.z)<2.4&&k.y<p.y+3){c.G.remove(p.g);c.hearts.splice(i,1);if(c.hp<c.max){c.hp++;s4Hearts();showMsg('+1 ♥',1.1,'good');}else showMsg('Hearts full!',1,'good');SFX.get();burst(p.x,p.y+1.4,p.z,20,[1,.4,.5],8,1,.5);}}
+    if(Math.hypot(k.x-p.x,k.z-p.z)<2.6&&k.y<p.y+3){if(p.g.parent)p.g.parent.remove(p.g);c.hearts.splice(i,1);if(c.hp<c.max){c.hp++;s4Hearts();showMsg('+1 ♥',1.1,'good');}else showMsg('Hearts full!',1,'good');SFX.get();burst(p.x,p.y+1.4,p.z,20,[1,.4,.5],8,1,.5);}}
   for(const b of c.bottles){if(b.got)continue;b.g.rotation.y+=dt*1.6;b.g.position.y=b.y+.3+Math.sin(S.t*2.2)*.15;if(Math.random()<dt*6)FX.emit(b.x+(Math.random()-.5),b.y+1.2,b.z+(Math.random()-.5),0,1.5,0,.5,.85,1,.5,.9,{g:-1});
     if(Math.hypot(k.x-b.x,k.z-b.z)<2.6){b.got=true;b.g.visible=false;c.bottlesGot++;STORY.dropN+=3;SFX.looks();setBanner('<small>HIDDEN WATER</small>BOTTLE '+c.bottlesGot+'/5','big');burst(b.x,b.y+1,b.z,40,[.4,.8,1],12,1.4,.7);setTimeout(()=>{if(S4&&$('banner').textContent.includes('BOTTLE'))setBanner('');},1800);}}
   /* fresh water from the burst pipe heals one heart */
@@ -139,12 +139,12 @@ function s4Hurt(n,msg){const c=S4,k=player;if(!c||c.mode!=='play'||c.dying!=null
   return true;}
 function s4Hearts(){const c=S4,el=$('sHearts');if(!c||!el)return;let h='';for(let i=0;i<c.max;i++)h+='<i class="'+(i<c.hp?'on':'')+'"></i>';if(el.innerHTML!==h)el.innerHTML=h;}
 function s4CP(name,s){const c=S4;if(c.cp&&c.cp.s>=s)return;c.cp={s,name,ei:c.ei};setBanner('<small>CHECKPOINT</small>'+name,'big');tone(990,.12,'triangle',.06);tone(1320,.2,'triangle',.06,null,.12);setTimeout(()=>{if(S4&&$('banner').textContent.includes(name))setBanner('');},1800);}
-function s4ClearBaddies(){const c=S4;for(const r of c.run)c.G.remove(r.g);c.run=[];for(const f of c.fly)c.G.remove(f.g);c.fly=[];for(const b of c.bombs){c.G.remove(b.g);}c.bombs=[];for(const b of c.bolts)c.G.remove(b.g);c.bolts=[];for(const p of c.scrapP)c.G.remove(p.g);c.scrapP=[];
+function s4ClearBaddies(){const c=S4;for(const r of c.run)s4Rm(r.g);c.run=[];for(const f of c.fly)s4Rm(f.g);c.fly=[];for(const b of c.bombs){s4Rm(b.g);}c.bombs=[];for(const b of c.bolts)s4Rm(b.g);c.bolts=[];for(const p of c.scrapP)s4Rm(p.g);c.scrapP=[];
   for(const m of c.marks)m.m.visible=false;for(const b of c.beams)b.m.visible=false;}
 function s4Respawn(){const c=S4,k=player,cp=c.cp;s4ClearBaddies();flash(.9);
   c.hp=c.max;c.inv=0;s4Hearts();
   /* sleeping bots ahead of the checkpoint go back to sleep */
-  for(let i=0;i<c.sleep.length;i++){const b=c.sleep[i];if(b.s<cp.s+5)continue;c.G.remove(b.g);c.sleep[i]=s4MakeSleeper(b.s,b.lat0);}
+  for(let i=0;i<c.sleep.length;i++){const b=c.sleep[i];if(b.s<cp.s+5)continue;s4Rm(b.g);c.sleep[i]=s4MakeSleeper(b.s,b.lat0);}
   /* re-arm the repeatable events after the checkpoint */
   for(const e of c.ev)if(e.rep&&e.s>cp.s)e.done=false;c.ei=c.ev.findIndex(e=>e.s>cp.s);if(c.ei<0)c.ei=c.ev.length;
   c.cornerV={};c.nm=[];

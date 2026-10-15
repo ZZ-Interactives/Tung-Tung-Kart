@@ -33,7 +33,7 @@ function s4Fx(dt){const c=S4,k=player,cp=camera.position;if(!c.lights)s4FxInit()
   /* debris flying about */
   for(let i=c.deb.length-1;i>=0;i--){const d=c.deb[i];d.t+=dt;d.v.y-=24*dt;d.m.position.addScaledVector(d.v,dt);d.m.rotation.x+=d.r.x*dt;d.m.rotation.y+=d.r.y*dt;d.m.rotation.z+=d.r.z*dt;
     const gy=(d.y0||0)+.2;if(d.m.position.y<gy){d.m.position.y=gy;d.v.y=Math.abs(d.v.y)>2?-d.v.y*.35:0;d.v.x*=.7;d.v.z*=.7;d.r.multiplyScalar(.6);}
-    if(d.t>d.life){const sc=Math.max(0,1-(d.t-d.life)*3);d.m.scale.setScalar(sc*(d.s0||1));if(sc<=0){c.G.remove(d.m);if(d.own&&d.m.geometry)d.m.geometry.dispose();c.deb.splice(i,1);}}}
+    if(d.t>d.life){const sc=Math.max(0,1-(d.t-d.life)*3);d.m.scale.setScalar(sc*(d.s0||1));if(sc<=0){if(d.m.parent)d.m.parent.remove(d.m);if(d.own&&d.m.geometry)d.m.geometry.dispose();c.deb.splice(i,1);}}}
   /* broken hydrants */
   for(let i=c.geys.length-1;i>=0;i--){const g=c.geys[i];g.t+=dt;for(let j=0;j<5;j++)FX.emit(g.x+(Math.random()-.5)*.3,g.y,g.z+(Math.random()-.5)*.3,(Math.random()-.5)*2,10+Math.random()*5,(Math.random()-.5)*2,.55,.85,1,.6,1.2,{g:16,drag:.2});if(g.t>6)c.geys.splice(i,1);}
   /* the castle */
