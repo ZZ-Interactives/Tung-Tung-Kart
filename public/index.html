@@ -8663,6 +8663,9 @@ function s4Deck(){const M=s4Mats(),DY=24,G=S4.G;
     for(const sx of[-1,1])s4Geo(B('conc',sx*10.4,cz),new THREE.BoxGeometry(.8,1.1,len+.05),sx*10.45,cy+.55,cz,pit,0,0,1,1,1,s4Tint(.86,.84,.8));
     if(cy>2.5&&((z+560)%30)<1){s4Box(B('conc',0,cz),0,cy/2-1,cz,5,cy-1,2.4,0,4,4,s4Tint(.7,.68,.64),63);}}
   /* below the highway: dry riverbed, broken fence, a few shacks */
+  /* one solid ground under the whole city, so gaps between blocks, closed side streets and street ends never show the sky through the floor */
+  {const t=M.conc.map.clone();t.needsUpdate=true;t.repeat.set(180,240);const gm=M.std({map:t,color:linC(0x6a6670),roughness:.97,polygonOffset:true,polygonOffsetFactor:4,polygonOffsetUnits:16});
+    const g=new THREE.Mesh(new THREE.PlaneGeometry(2400,3700),gm);g.rotation.x=-Math.PI/2;g.position.set(420,-.12,1630);g.renderOrder=-1;g.receiveShadow=true;g.userData.free4=true;G.add(g);}
   {const g=new THREE.Mesh(new THREE.PlaneGeometry(1400,1100),M.dirt);g.rotation.x=-Math.PI/2;g.position.set(0,-.06,-650);g.material.map.repeat.set(70,55);g.receiveShadow=true;g.userData.free4=true;G.add(g);
     const rb=new THREE.Mesh(new THREE.PlaneGeometry(60,900),M.std({color:linC(0x6e5a44),roughness:1}));rb.rotation.x=-Math.PI/2;rb.rotation.z=.2;rb.position.set(-60,-.04,-700);rb.userData.free4=true;G.add(rb);
     for(let k=0;k<26;k++){const x=(Math.random()<.5?-1:1)*(40+Math.random()*300),z=-1000+Math.random()*760,w=6+Math.random()*10,d=6+Math.random()*10,h=3+Math.random()*5;s4Box(B('fac.'+(Math.random()<.5?'brick':'cream'),x,z),x,h/2,z,w,h,d,Math.random(),12,14,s4Tint(.7,.65,.6));s4Box(B('rust',x,z),x,h+.15,z,w+.6,.3,d+.6,0,4,4);}}}
